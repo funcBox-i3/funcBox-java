@@ -6,7 +6,7 @@
 
     <groupId>io.github.funcbox-i3</groupId>
     <artifactId>funcBox</artifactId>
-    <version>1.0.2</version>
+    <version>1.1.0</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -96,20 +96,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-<!--            Auto publish -->
-
-<!--            <plugin>-->
-<!--                <groupId>org.sonatype.central</groupId>-->
-<!--                <artifactId>central-publishing-maven-plugin</artifactId>-->
-<!--                <version>0.7.0</version>-->
-<!--                <extensions>true</extensions>-->
-<!--                <configuration>-->
-<!--                    <publishingServerId>central</publishingServerId>-->
-<!--                    <autoPublish>true</autoPublish>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
-
         </plugins>
     </build>
 
