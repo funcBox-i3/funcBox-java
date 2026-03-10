@@ -1,8 +1,8 @@
-package funcBox.Dijkstra;
+package funcBox.dijkstra;
 
 import java.util.*;
 
-public class dijkstra {
+public class Dijkstra {
 
     public static Result dijkstra(Map<String, Map<String, Integer>> graph, String startNode) {
         // Find the farthest node from startNode

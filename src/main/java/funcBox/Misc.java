@@ -3,7 +3,19 @@ package funcBox;
 import java.util.ArrayList;
 import java.util.List;
 
-
+/**
+ * FuncBox class {@code Misc} Utilities
+ * <p>
+ * Instructions for developers:
+ * <ul>
+ *  <li>This class contains optimized math and string helper functions.
+ * <li>Use isPrime() for single checks.
+ * <li> Use primes(start, limit) for generating prime ranges.
+ * <li> Do not modify internal algorithms unless performance is tested.
+ * </p>
+ * @author Kishore P
+ * @Library: FuncBox
+ */
 public class Misc {
 
     //primeList
@@ -60,17 +72,19 @@ public class Misc {
 
     //Prime
     public boolean isPrime(int num) {
-        if (num <= 1) {
-            return false;
-        }
-        int n = 2;
-        while (n * n <= num) {
-            if (num % n == 0) {
+
+        if (num <= 1) return false;
+        if (num <= 3) return true;
+
+        if (num % 2 == 0 || num % 3 == 0) return false;
+
+        for (int i = 5; i * i <= num; i += 6) {
+            if (num % i == 0 || num % (i + 2) == 0) {
                 return false;
             }
-            n++;
         }
-        return n * n > num;
+
+        return true;
     }
 
     //Palindrome
@@ -106,5 +120,31 @@ public class Misc {
             prevFib = temp;
         }
         return fib;
+    }
+
+    //SplitPrimeComposite
+    public List<List<Integer>> splitPrimeComposite(List<Integer> numbers) {
+
+        List<Integer> primes = new ArrayList<>();
+        List<Integer> composites = new ArrayList<>();
+
+        for (int n : numbers) {
+
+            if (n <= 1) {
+                continue;
+            }
+
+            if (isPrime(n)) {
+                primes.add(n);
+            } else {
+                composites.add(n);
+            }
+        }
+
+        List<List<Integer>> result = new ArrayList<>();
+        result.add(primes);
+        result.add(composites);
+
+        return result;
     }
 }

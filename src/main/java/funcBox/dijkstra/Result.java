@@ -1,4 +1,4 @@
-package funcBox.Dijkstra;
+package funcBox.dijkstra;
 
 import java.util.List;
 import java.util.Map;
