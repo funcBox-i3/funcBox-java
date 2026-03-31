@@ -211,4 +211,75 @@ public final class Misc {
 
         return result;
     }
+
+    /**
+     * Determines whether two strings are anagrams of each other with configurable case sensitivity.
+     *
+     * <p>Two strings are anagrams if they contain the same characters with the
+     * same frequencies. Whitespace is always ignored during comparison.</p>
+     *
+     * <p><b>Algorithm:</b> Character frequency mapping using a fixed-size array.
+     * Time: O(n + m) where n, m are string lengths. Space: O(1) constant.</p>
+     *
+     * <p><b>Case Sensitivity Control:</b></p>
+     * <ul>
+     *   <li>{@code caseSensitive=false} (default): Treats 'A' and 'a' as same (case-insensitive)</li>
+     *   <li>{@code caseSensitive=true}: Treats 'A' and 'a' as different (case-sensitive)</li>
+     * </ul>
+     *
+     * <p><b>Examples:</b></p>
+     * <ul>
+     *   <li>{@code isAnagram("Listen", "silent", false)} → {@code true} (case-insensitive)</li>
+     *   <li>{@code isAnagram("Listen", "silent", true)} → {@code false} (case-sensitive: L ≠ l)</li>
+     *   <li>{@code isAnagram("listen", "silent", true)} → {@code true} (case-sensitive match)</li>
+     *   <li>{@code isAnagram("a b", "ba", false)} → {@code true} (whitespace ignored)</li>
+     *   <li>{@code isAnagram(null, "test", false)} → {@code false} (null-safe)</li>
+     * </ul>
+     *
+     * @param str1          the first string to compare
+     * @param str2          the second string to compare
+     * @param caseSensitive {@code true} for case-sensitive comparison;
+     *                      {@code false} for case-insensitive (default: treats 'A' and 'a' as same)
+     * @return {@code true} if strings are anagrams; {@code false} for null, empty, or non-matching strings
+     */
+    public static boolean isAnagram(String str1, String str2, boolean caseSensitive) {
+
+        if (str1 == null || str2 == null) {
+            return false;
+        }
+
+        String normalized1;
+        String normalized2;
+
+        if (caseSensitive) {
+            normalized1 = str1.replaceAll("\\s+", "");
+            normalized2 = str2.replaceAll("\\s+", "");
+        } else {
+            normalized1 = str1.toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
+            normalized2 = str2.toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
+        }
+
+        if (normalized1.length() != normalized2.length()) {
+            return false;
+        }
+
+        if (normalized1.isEmpty()) {
+            return false;
+        }
+
+        int[] charFreq = new int[256];
+
+        for (char c : normalized1.toCharArray()) {
+            charFreq[c]++;
+        }
+
+        for (char c : normalized2.toCharArray()) {
+            charFreq[c]--;
+            if (charFreq[c] < 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
