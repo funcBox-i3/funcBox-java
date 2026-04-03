@@ -15,34 +15,40 @@ import java.util.*;
  * where:
  * <ul>
  *     <li>Key = Node</li>
- *     <li>Value = Map of Neighbor nodes and their edge weights</li>
+ *     <li>Value = Map of neighbor nodes and their edge weights</li>
  * </ul>
  *
  * <p>All edge weights must be non-negative.
  * Methods throw {@link IllegalArgumentException} when input validation fails.
  *
  * <p><b>Library:</b> funcBox
+ *
+ * @since 1.0.0
  */
-public class Dijkstra {
+public final class Dijkstra {
+
+    /**
+     * Prevents instantiation of this static utility class.
+     */
+    private Dijkstra() {}
 
     /**
      * Computes the shortest paths from the given start node and returns
-     * the path to the farthest reachable node.
+     * the result covering all reachable nodes.
      *
      * <p>This method internally:
      * <ol>
-     *     <li>Runs the Dijkstra algorithms from the start node</li>
+     *     <li>Runs the Dijkstra algorithm from the start node</li>
      *     <li>Finds the farthest reachable node</li>
      *     <li>Returns the shortest path from the start node to that node</li>
      * </ol>
      *
-     * @param graph the graph represented as adjacency maps
+     * @param graph     the graph represented as adjacency maps
      * @param startNode the starting node
      * @return a {@link Result} object containing distances and paths
      * @throws IllegalArgumentException if input is invalid or graph contains negative edge weights
      */
     public static Result dijkstra(Map<String, Map<String, Integer>> graph, String startNode) {
-        // Find the farthest node from startNode
         Result all = dijkstra(graph, startNode, null);
         String farthest = null;
         int maxDist = Integer.MIN_VALUE;
@@ -65,9 +71,9 @@ public class Dijkstra {
      * If an end node is provided, only the nodes along the shortest path
      * from the start node to the end node are returned.
      *
-     * @param graph the graph represented as adjacency maps
+     * @param graph     the graph represented as adjacency maps
      * @param startNode the starting node
-     * @param endNode the destination node (optional)
+     * @param endNode   the destination node (optional)
      * @return a {@link Result} containing distances and computed paths
      * @throws IllegalArgumentException if nodes are invalid or any traversed edge has negative weight
      */
@@ -102,8 +108,8 @@ public class Dijkstra {
             }
 
             Map<String, Integer> neighbors = graph.get(currentNode);
-            if (neighbors == null)
-                continue;
+            if (neighbors == null) continue;
+
             for (Map.Entry<String, Integer> neighborEntry : neighbors.entrySet()) {
                 String neighbor = neighborEntry.getKey();
                 int weight = neighborEntry.getValue();
@@ -127,15 +133,12 @@ public class Dijkstra {
             }
         }
 
-        // After the loop
         if (endNode != null) {
-            // Only include nodes on the path from start to endNode and their predecessors
             Map<String, Integer> filteredDistances = new LinkedHashMap<>();
             Map<String, List<String>> filteredPaths = new LinkedHashMap<>();
             List<String> path = paths.get(endNode);
             if (path != null) {
-                for (int i = 0; i < path.size(); i++) {
-                    String node = path.get(i);
+                for (String node : path) {
                     filteredDistances.put(node, distances.get(node));
                     filteredPaths.put(node, paths.get(node));
                 }
@@ -154,12 +157,6 @@ public class Dijkstra {
         /** Current best-known tentative distance. */
         int distance;
 
-        /**
-         * Creates a queue node wrapper.
-         *
-         * @param name node id
-         * @param distance tentative distance
-         */
         Node(String name, int distance) {
             this.name = name;
             this.distance = distance;

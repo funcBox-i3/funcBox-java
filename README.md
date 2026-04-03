@@ -1,21 +1,23 @@
-# FuncBox — Java Utility Library
+# FuncBox Java Utility Library
+
+**FuncBox** is a lightweight Java utility library with minimal dependencies that provides ready-to-use functions for mathematics, string operations, and graph algorithms — all in one clean package.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Java](https://img.shields.io/badge/Java-11%2B-ED8B00.svg?logo=openjdk&logoColor=white)](https://openjdk.org/)
 [![Maven Central](https://img.shields.io/badge/Maven%20Central-1.1.0-blue.svg?logo=apachemaven)](https://search.maven.org/artifact/io.github.funcbox-i3/funcBox)
 
-**FuncBox** is a lightweight Java utility library with minimal dependencies (including Jackson for JSON handling) that provides ready-to-use functions for mathematics, string operations, and graph algorithms — all in one clean package.
 
 ---
 
 ## Table of Contents
 
-- [Requirements](#requirements)
-- [Installation](#installation)
-  - [Maven](#maven)
-  - [Gradle (Groovy)](#gradle-groovy)
-  - [Gradle (Kotlin DSL)](#gradle-kotlin-dsl)
-  - [Manual JAR](#manual-jar)
+- [Install](#install)
+  - [Requirements](#requirements)
+  - [Installation](#installation)
+    - [Maven](#maven)
+    - [Gradle (Groovy)](#gradle-groovy)
+    - [Gradle (Kotlin DSL)](#gradle-kotlin-dsl)
+    - [Manual JAR](#manual-jar)
 - [Quick Start](#quick-start)
 - [API Reference](#api-reference)
   - [Misc — Mathematics & String Utilities](#misc--mathematics--string-utilities)
@@ -24,32 +26,39 @@
     - [fibonacci](#fibonacci)
     - [getFactors](#getfactors)
     - [isPalindrome](#ispalindrome)
+    - [isAnagram](#isanagram)
+    - [capitalizeEachWord](#capitalizeeachword)
+    - [truncate](#truncate)
+    - [clamp](#clamp)
     - [splitPrimeComposite](#splitprimecomposite)
-  - [DataUtil — Safe Data Navigation](#datautil--safe-data-navigation)
-    - [safeGet](#safeget)
+  - [funcBox.dig — Safe JSON Navigation](#funcboxdig--safe-json-navigation)
+    - [Dig](#dig)
+    - [DigContext](#digcontext)
   - [Dijkstra — Graph Algorithms](#dijkstra--graph-algorithms)
     - [dijkstra (single source)](#dijkstra-single-source)
     - [dijkstra (source to target)](#dijkstra-source-to-target)
+  - [Result](#result)
 - [Error Handling](#error-handling)
+- [Disclaimer](#disclaimer)
 - [Contributing](#contributing)
 - [License](#license)
 
 ---
 
-## Requirements
+## Install
+
+### Requirements
 
 | Requirement | Version |
 |-------------|---------|
 | Java | 11 or higher |
 | Maven / Gradle | Any modern version |
 
----
-
-## Installation
+### Installation
 
 Add FuncBox to your project using your preferred build tool. The dependency lives on **Maven Central** so no extra repository configuration is required.
 
-### Maven
+#### Maven
 
 Open your `pom.xml` and add the following inside the `<dependencies>` block:
 
@@ -70,7 +79,7 @@ After adding it, run:
 mvn dependency:resolve
 ```
 
-### Gradle (Groovy)
+#### Gradle (Groovy)
 
 Open your `build.gradle` and add the dependency inside the `dependencies` block:
 
@@ -86,7 +95,7 @@ After adding it, run:
 ./gradlew dependencies
 ```
 
-### Gradle (Kotlin DSL)
+#### Gradle (Kotlin DSL)
 
 Open your `build.gradle.kts` and add:
 
@@ -96,7 +105,7 @@ dependencies {
 }
 ```
 
-### Manual JAR
+#### Manual JAR
 
 If you are not using a build tool, download the JAR directly from [MVN Repository](https://mvnrepository.com/artifact/io.github.funcbox-i3/funcBox/1.1.0) and add it to your project's classpath.
 
@@ -106,6 +115,8 @@ If you are not using a build tool, download the JAR directly from [MVN Repositor
 
 ```java
 import funcBox.Misc;
+import funcBox.dig.Dig;
+import funcBox.dig.DigContext;
 import funcBox.dijkstra.Dijkstra;
 import funcBox.dijkstra.Result;
 import java.util.*;
@@ -113,22 +124,42 @@ import java.util.*;
 public class Main {
     public static void main(String[] args) {
 
-        // --- Math Utilities ---
+        // Math Utilities
         System.out.println(Misc.isPrime(17));              // true
         System.out.println(Misc.primes(2, 20));            // [2, 3, 5, 7, 11, 13, 17, 19]
         System.out.println(Misc.fibonacci(10));            // 55
         System.out.println(Misc.getFactors(12));           // [1, 2, 3, 4, 6]
 
-        // --- String Utilities ---
-        System.out.println(Misc.isPalindrome("Racecar")); // true
+        // String Utilities
+        System.out.println(Misc.isPalindrome("A man, a plan, a canal: Panama")); // true
+        System.out.println(Misc.isAnagram("Listen", "Silent", false));          // true
+        System.out.println(Misc.capitalizeEachWord("hello world"));              // Hello World
+        System.out.println(Misc.truncate("abcdefghijklmnop", 10));               // abcdefghij
+        System.out.println(Misc.clamp(150L, 0, 100));                            // 100
 
-        // --- Split into primes and composites ---
+        // Split into primes and composites
         List<Integer> numbers = List.of(2, 3, 4, 5, 6, 7, 8, 9, 10);
         List<List<Integer>> split = Misc.splitPrimeComposite(numbers);
         System.out.println(split.get(0)); // Primes:     [2, 3, 5, 7]
         System.out.println(split.get(1)); // Composites: [4, 6, 8, 9, 10]
 
-        // --- Graph Shortest Path ---
+        // Safe JSON Navigation
+        String json = """
+        {
+          "user": {
+            "name": "Zoro",
+            "age": 19,
+            "address": { "city": "London" }
+          }
+        }
+        """;
+
+        DigContext d = Dig.of(json);
+        System.out.println(d.getString("user.name"));         // Zoro
+        System.out.println(d.getInt("user.age"));             // 19
+        System.out.println(d.scope("user.address").getString("city")); // London
+
+        // Graph Shortest Path
         Map<String, Map<String, Integer>> graph = new HashMap<>();
         graph.put("A", Map.of("B", 4, "C", 2));
         graph.put("B", Map.of("D", 5, "E", 1));
@@ -161,7 +192,7 @@ import funcBox.Misc;
 
 ---
 
-#### isPrime
+#### **`isPrime`**
 
 ```java
 boolean Misc.isPrime(int num)
@@ -189,7 +220,7 @@ Misc.isPrime(97);  // true
 
 ---
 
-#### primes
+#### **`primes`**
 
 ```java
 List<Integer> Misc.primes(int start, int limit)
@@ -220,26 +251,15 @@ Misc.primes(2, 2);    // [2]
 
 ---
 
-#### fibonacci
+#### **`fibonacci`**
 
 ```java
-int Misc.fibonacci(int num)
+long Misc.fibonacci(int num)
 ```
 
-Returns the Fibonacci number at the given index using an iterative approach. The sequence starts at index `0` with value `0`.
+Returns the Fibonacci number at the given index using an iterative approach.
 
-**Special return values:**
-
-| Input condition | Returns |
-|-----------------|---------|
-| `num < 0` | `-1` (negative index is not valid) |
-| Result exceeds `Integer.MAX_VALUE` | `-1` (overflow guard) |
-
-**Fibonacci Sequence (reference):**
-```
-Index:  0  1  2  3  4  5  6   7   8   9   10
-Value:  0  1  1  2  3  5  8  13  21  34   55
-```
+**Valid index range:** `0..92`
 
 **Parameters:**
 
@@ -247,29 +267,34 @@ Value:  0  1  1  2  3  5  8  13  21  34   55
 |-----------|-------|--------------------------------------|
 | `num`     | `int` | The index in the Fibonacci sequence. |
 
-**Returns:** `int` — the Fibonacci value at position `num`, or `-1` if `num` is negative or the result overflows `Integer.MAX_VALUE`.
+**Returns:** `long` — the Fibonacci value at position `num`.
+
+**Throws:**
+
+| Exception | Condition |
+|-----------|-----------|
+| `IllegalArgumentException` | `num < 0` |
+| `ArithmeticException` | `num > 92` (result exceeds `long` capacity) |
 
 **Examples:**
 
 ```java
 Misc.fibonacci(0);   // 0
 Misc.fibonacci(1);   // 1
-Misc.fibonacci(5);   // 5
 Misc.fibonacci(10);  // 55
-Misc.fibonacci(46);  // 1836311903  (last valid int-range Fibonacci)
-Misc.fibonacci(47);  // -1          (overflows Integer.MAX_VALUE)
-Misc.fibonacci(-1);  // -1          (negative index)
+Misc.fibonacci(50);  // 12586269025
+Misc.fibonacci(92);  // 7540113804746346429
 ```
 
 ---
 
-#### getFactors
+#### **`getFactors`**
 
 ```java
 String Misc.getFactors(int num)
 ```
 
-Returns all factors of the given number, **excluding the number itself**. For prime numbers, only `[1]` is returned since primes have no other factors besides `1` and themselves.
+Returns all factors of the given number, **including `1` but excluding the number itself**. For prime numbers, only `[1]` is returned since primes have no other factors besides `1` and themselves.
 
 **Parameters:**
 
@@ -291,13 +316,13 @@ Misc.getFactors(100); // [1, 2, 4, 5, 10, 20, 25, 50]
 
 ---
 
-#### isPalindrome
+#### **`isPalindrome`**
 
 ```java
 boolean Misc.isPalindrome(String val)
 ```
 
-Checks whether a string reads the same forwards and backwards. The comparison is **case-insensitive**, so `"Racecar"` and `"racecar"` both return `true`.
+Checks whether a string is a valid palindrome using a two-pointer approach. A valid palindrome reads identically forward and backward, ignoring non-alphanumeric characters and treating uppercase and lowercase letters as equivalent.
 
 **Parameters:**
 
@@ -305,22 +330,62 @@ Checks whether a string reads the same forwards and backwards. The comparison is
 |-----------|----------|--------------------------|
 | `val`     | `String` | The string to evaluate.  |
 
-**Returns:** `true` if the string is a palindrome, `false` otherwise.
+**Returns:** `true` if the string is a palindrome, `false` for null or non-palindromes.
 
 **Examples:**
 
 ```java
-Misc.isPalindrome("madam");    // true
-Misc.isPalindrome("Racecar");  // true  (case-insensitive)
-Misc.isPalindrome("level");    // true
-Misc.isPalindrome("Hello");    // false
-Misc.isPalindrome("a");        // true  (single character)
-Misc.isPalindrome("");         // false (empty string)
+Misc.isPalindrome("racecar");                           // true
+Misc.isPalindrome("A man, a plan, a canal: Panama");   // true (spaces/punctuation ignored)
+Misc.isPalindrome("hello");                            // false
+Misc.isPalindrome("12321");                            // true
+Misc.isPalindrome(null);                               // false
 ```
 
 ---
 
-#### splitPrimeComposite
+#### **`isAnagram`**
+
+```java
+boolean Misc.isAnagram(String str1, String str2, boolean caseSensitive)
+```
+
+Determines whether two strings are anagrams of each other. Two strings are anagrams if they contain the same characters with the same frequencies. Whitespace is **always ignored** during comparison. The `caseSensitive` flag controls whether casing matters.
+
+**Parameters:**
+
+| Parameter       | Type      | Description                                                                 |
+|-----------------|-----------|-----------------------------------------------------------------------------|
+| `str1`          | `String`  | The first string to compare.                                                |
+| `str2`          | `String`  | The second string to compare.                                               |
+| `caseSensitive` | `boolean` | `true` for case-sensitive; `false` for case-insensitive (treats `A` = `a`). |
+
+**Returns:** `true` if the strings are anagrams, `false` otherwise (including `null` or empty inputs).
+
+**Examples:**
+
+```java
+// Case-insensitive (default behavior)
+Misc.isAnagram("Listen", "Silent", false);           // true
+Misc.isAnagram("Triangle", "Integral", false);       // true
+Misc.isAnagram("Hello", "World", false);             // false
+
+// Case-sensitive
+Misc.isAnagram("Listen", "silent", true);            // false  ('L' != 'l')
+Misc.isAnagram("listen", "silent", true);            // true
+
+// Whitespace is always ignored
+Misc.isAnagram("a b c", "cba", false);               // true
+Misc.isAnagram("rail safety", "fairy tales", false); // true
+
+// Null / empty handling
+Misc.isAnagram(null, "test", false);                 // false
+Misc.isAnagram("", "", false);                       // false
+```
+
+---
+
+#### **`splitPrimeComposite`**
 
 ```java
 List<List<Integer>> Misc.splitPrimeComposite(List<Integer> numbers)
@@ -361,23 +426,127 @@ split.get(1);  // [15, 18, 20]      — Composites
 
 ---
 
-### DataUtil — Safe Data Navigation
+#### **`capitalizeEachWord`**
 
-**Import:**
 ```java
-import funcBox.DataUtil;
+String Misc.capitalizeEachWord(String str)
 ```
 
-Safely traverses nested JSON strings or object graphs (maps, lists, arrays) without crashes. Guards against nulls, malformed JSON, missing keys, and out-of-bounds indexes.
+Capitalizes the first character of each word in a string. Whitespace is normalized (multiple spaces collapsed to single spaces), and null/empty/whitespace-only input returns an empty string.
+
+**Parameters:**
+
+| Parameter | Type     | Description                                |
+|-----------|----------|---------------------------------------------|
+| `str`     | `String` | The input string to capitalize word-by-word |
+
+**Returns:** The capitalized string, or empty string if input is null/empty/whitespace-only.
+
+**Examples:**
+
+```java
+Misc.capitalizeEachWord("hello world");              // "Hello World"
+Misc.capitalizeEachWord("a");                        // "A"
+Misc.capitalizeEachWord("hello  WORLD");             // "Hello World"  (multiple spaces collapsed)
+Misc.capitalizeEachWord("hello\tWORLD");             // "Hello World"  (tabs normalized)
+Misc.capitalizeEachWord("123 abc");                  // "123 Abc"
+Misc.capitalizeEachWord(null);                       // ""
+Misc.capitalizeEachWord("   ");                      // ""  (whitespace-only)
+```
 
 ---
 
-#### safeGet
+#### **`truncate`**
 
 ```java
-Object DataUtil.safeGet(Object source, Object path)
-Object DataUtil.safeGet(Object source, Object path, boolean returnLastSeen)
-Object DataUtil.safeGet(Object source, Object path, Object defaultValue, boolean returnLastSeen)
+String Misc.truncate(String text, int maxLength)
+```
+
+Truncates a string to a maximum length. If the input length is less than or equal to `maxLength`, the original string is returned unchanged.
+
+**Parameters:**
+
+| Parameter   | Type     | Description                          |
+|-------------|----------|--------------------------------------|
+| `text`      | `String` | The input text, may be null          |
+| `maxLength` | `int`    | The maximum allowed length           |
+
+**Returns:** The truncated or original string; returns empty string for null input.
+
+**Throws:** `IllegalArgumentException` if `maxLength < 0`.
+
+**Examples:**
+
+```java
+Misc.truncate("abcdefghijklmnop", 10);   // "abcdefghij"
+Misc.truncate("hello", 10);               // "hello"  (already shorter)
+Misc.truncate(null, 5);                   // ""
+Misc.truncate("test", -1);                // throws IllegalArgumentException
+```
+
+---
+
+#### **`clamp`**
+
+```java
+int Misc.clamp(long value, int min, int max)
+```
+
+Clamps a value to the inclusive range `[min, max]`. If `value < min`, returns `min`. If `value > max`, returns `max`. Otherwise, returns the value casted to `int`.
+
+**Parameters:**
+
+| Parameter | Type  | Description                              |
+|-----------|-------|------------------------------------------|
+| `value`   | `long` | The value to clamp                       |
+| `min`     | `int` | The minimum allowed value (inclusive)    |
+| `max`     | `int` | The maximum allowed value (inclusive)    |
+
+**Returns:** The clamped value as `int`.
+
+**Throws:** `IllegalArgumentException` if `min > max`.
+
+**Examples:**
+
+```java
+Misc.clamp(150L, 0, 100);   // 100  (clamped to max)
+Misc.clamp(-10L, 0, 100);   // 0    (clamped to min)
+Misc.clamp(50L, 0, 100);    // 50   (within range)
+Misc.clamp(100, 100, 100);  // 100  (exact boundary)
+```
+
+---
+
+**Import:**
+```java
+import funcBox.dig.Dig;
+import funcBox.dig.DigContext;
+```
+
+Parse JSON once, then reuse a `DigContext` for repeated lookups over maps, lists, and arrays.
+
+---
+
+#### **`Dig`**
+
+```java
+DigContext Dig.of(String json)
+DigContext Dig.of(Object source)
+```
+
+#### **`DigContext`**
+
+```java
+Object DigContext.get(Object path)
+Object DigContext.get(Object path, Object defaultValue)
+boolean DigContext.has(Object path)
+DigContext DigContext.scope(Object path)
+Map<String, Object> DigContext.getAll(String... paths)
+String DigContext.getString(String path)
+Integer DigContext.getInt(String path)
+Long DigContext.getLong(String path)
+Double DigContext.getDouble(String path)
+Boolean DigContext.getBoolean(String path)
 ```
 
 **Path Format Guide:**
@@ -388,39 +557,23 @@ Object DataUtil.safeGet(Object source, Object path, Object defaultValue, boolean
 | **Access List/Array elements** | Use **numeric index** for lists/arrays | `"employees.0.name"` (1st employee) |
 | **Mix keys and indexes** | Alternate between names and numbers | `"data.0.items.2"` (1st item, 3rd sub-item) |
 
-**Parameters:**
-
-| Param | Type | Purpose |
-|-------|------|---------|
-| `source` | `String` or `Object` | JSON string or Map/List/array object |
-| `path` | `String` | Dot-delimited path (e.g., `"a.b.0.c"`) |
-| `defaultValue` | `Object` | Fallback when path fails; defaults to `null` |
-| `returnLastSeen` | `boolean` | If `true`, return deepest valid node on failure |
-
 **Quick Examples:**
 
 ```java
-String json = """{"users": [{"name": "Alice", "age": 30}]}""";
+DigContext d = Dig.of(json);
 
-// Key-based lookup
-String name = (String) DataUtil.safeGet(json, "users.0.name");  // "Alice"
-
-// Missing key — returns null
-String missing = (String) DataUtil.safeGet(json, "users.0.email");  // null
-
-// With default fallback
-String city = (String) DataUtil.safeGet(json, "users.0.city", "Unknown");  // "Unknown"
-
-// Last-seen node (get parent Map on failure)
-Object lastNode = DataUtil.safeGet(json, "users.0.invalid", true);
-// Returns the user Map {name: "Alice", age: 30}
+String name = d.getString("users.0.name");
+String city = (String) d.get("users.0.city", "Unknown");
+DigContext user = d.scope("users.0");
+Integer age = user.getInt("age");
 ```
 
 **Path Rules:**
-- 📌 **Names** = object properties (map keys) → use lowercase/camelCase
-- 🔢 **Numbers** = array/list positions → use 0-based index (0, 1, 2, ...)
-- ❌ Returns `defaultValue`/`null` if any key is missing or index out of bounds
-- ✅ Safe with malformed JSON — never throws exceptions
+-  **Names** = object properties (map keys) → use lowercase/camelCase
+-  **Numbers** = array/list positions → use 0-based index (0, 1, 2, ...)
+-  Returns `defaultValue`/`null` if any key is missing or index is out of bounds
+-  Safe with malformed JSON — never throws exceptions
+
 
 ---
 
@@ -457,7 +610,7 @@ graph.put("D", Map.of());                 // D has no outgoing edges
 
 ---
 
-#### dijkstra (single source)
+#### **`dijkstra`** (single source)
 
 ```java
 Result Dijkstra.dijkstra(Map<String, Map<String, Integer>> graph, String startNode)
@@ -498,7 +651,7 @@ System.out.println(result.paths);
 
 ---
 
-#### dijkstra (source to target)
+#### **`dijkstra`** (source to target)
 
 ```java
 Result Dijkstra.dijkstra(Map<String, Map<String, Integer>> graph, String startNode, String endNode)
@@ -573,6 +726,12 @@ try {
 
 ---
 
+## Disclaimer
+
+This library aims to provide stable APIs, but minor behavior adjustments may happen between releases. Review release notes before upgrading.
+
+---
+
 ## Contributing
 
 Contributions, bug reports, and feature requests are welcome!
@@ -593,10 +752,4 @@ This project is licensed under the **MIT License** — see [LICENSE.txt](LICENSE
 
 ---
 
-> **Disclaimer:** FuncBox is provided as-is for general utility use. The developer is not responsible for issues arising from misuse or improper integration of the library.
-
----
-
-<p align="center">
-  Made with ☕ · <a href="https://central.sonatype.com/artifact/io.github.funcbox-i3/funcBox">Maven Central</a> · <a href="https://github.com/funcBox-i3/funcBox-java/issues">Report an Issue</a>
-</p>
+Made with care · [Maven Central](https://central.sonatype.com/artifact/io.github.funcbox-i3/funcBox) · [Report an Issue](https://github.com/funcBox-i3/funcBox-java/issues)
