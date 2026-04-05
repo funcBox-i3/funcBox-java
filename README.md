@@ -14,30 +14,12 @@
 - [Install](#install)
   - [Requirements](#requirements)
   - [Installation](#installation)
-    - [Maven](#maven)
-    - [Gradle (Groovy)](#gradle-groovy)
-    - [Gradle (Kotlin DSL)](#gradle-kotlin-dsl)
-    - [Manual JAR](#manual-jar)
 - [Quick Start](#quick-start)
 - [API Reference](#api-reference)
   - [Misc — Mathematics & String Utilities](#misc--mathematics--string-utilities)
-    - [isPrime](#isprime)
-    - [primes](#primes)
-    - [fibonacci](#fibonacci)
-    - [getFactors](#getfactors)
-    - [isPalindrome](#ispalindrome)
-    - [isAnagram](#isanagram)
-    - [capitalizeEachWord](#capitalizeeachword)
-    - [truncate](#truncate)
-    - [clamp](#clamp)
-    - [splitPrimeComposite](#splitprimecomposite)
   - [funcBox.dig — Safe JSON Navigation](#funcboxdig--safe-json-navigation)
-    - [Dig](#dig)
-    - [DigContext](#digcontext)
+  - [funcBox.http — Simplified Web Client](#funcboxhttp--simplified-web-client)
   - [Dijkstra — Graph Algorithms](#dijkstra--graph-algorithms)
-    - [dijkstra (single source)](#dijkstra-single-source)
-    - [dijkstra (source to target)](#dijkstra-source-to-target)
-  - [Result](#result)
 - [Error Handling](#error-handling)
 - [Disclaimer](#disclaimer)
 - [Contributing](#contributing)
@@ -136,6 +118,8 @@ public class Main {
         System.out.println(Misc.capitalizeEachWord("hello world"));              // Hello World
         System.out.println(Misc.truncate("abcdefghijklmnop", 10));               // abcdefghij
         System.out.println(Misc.clamp(150L, 0, 100));                            // 100
+        System.out.println(Misc.levenshteinDistance("hello", "hallo"));          // 1
+        System.out.println(Misc.fuzzyMatchScore("hello", "hallo"));              // 0.8
 
         // Split into primes and composites
         List<Integer> numbers = List.of(2, 3, 4, 5, 6, 7, 8, 9, 10);
@@ -190,9 +174,28 @@ All methods in FuncBox are **static**. You never need to create an instance — 
 import funcBox.Misc;
 ```
 
+**Available Functions:**
+
+| Function | Description |
+|----------|-------------|
+| [`isPrime(int num)`](#isprime) | Check if a number is prime |
+| [`primes(int start, int limit)`](#primes) | Generate all primes in a range using Sieve of Eratosthenes |
+| [`fibonacci(int num)`](#fibonacci) | Get Fibonacci number at index (0-92) |
+| [`getFactors(int num)`](#getfactors) | Get all factors of a number |
+| [`isPalindrome(String val)`](#ispalindrome) | Check if string is a palindrome (ignores punctuation/case) |
+| [`isAnagram(String str1, String str2, boolean caseSensitive)`](#isanagram) | Check if two strings are anagrams |
+| [`capitalizeEachWord(String str)`](#capitalizeeachword) | Capitalize first letter of each word |
+| [`truncate(String text, int maxLength)`](#truncate) | Truncate string to maximum length |
+| [`clamp(long value, int min, int max)`](#clamp) | Clamp value to min/max range |
+| [`splitPrimeComposite(List<Integer> numbers)`](#splitprimecomposite) | Split list into primes and composites |
+| [`levenshteinDistance(String str1, String str2)`](#levenshteindistance) | Calculate minimum edit distance between two strings |
+| [`levenshteinDistance(String target, String[] candidates)`](#levenshteindistance-array) | Calculate edit distances from target to multiple candidates |
+| [`fuzzyMatchScore(String str1, String str2)`](#fuzzymatchscore) | Calculate normalized similarity score (0.0 to 1.0) |
+| [`fuzzyMatchScore(String target, String[] candidates)`](#fuzzymatchscore-array) | Calculate similarity scores from target to multiple candidates |
+
 ---
 
-#### **`isPrime`**
+#### isPrime
 
 ```java
 boolean Misc.isPrime(int num)
@@ -220,7 +223,7 @@ Misc.isPrime(97);  // true
 
 ---
 
-#### **`primes`**
+#### primes
 
 ```java
 List<Integer> Misc.primes(int start, int limit)
@@ -251,7 +254,7 @@ Misc.primes(2, 2);    // [2]
 
 ---
 
-#### **`fibonacci`**
+#### fibonacci
 
 ```java
 long Misc.fibonacci(int num)
@@ -288,7 +291,7 @@ Misc.fibonacci(92);  // 7540113804746346429
 
 ---
 
-#### **`getFactors`**
+#### getFactors
 
 ```java
 String Misc.getFactors(int num)
@@ -316,7 +319,7 @@ Misc.getFactors(100); // [1, 2, 4, 5, 10, 20, 25, 50]
 
 ---
 
-#### **`isPalindrome`**
+#### isPalindrome
 
 ```java
 boolean Misc.isPalindrome(String val)
@@ -344,7 +347,7 @@ Misc.isPalindrome(null);                               // false
 
 ---
 
-#### **`isAnagram`**
+#### isAnagram
 
 ```java
 boolean Misc.isAnagram(String str1, String str2, boolean caseSensitive)
@@ -385,7 +388,7 @@ Misc.isAnagram("", "", false);                       // false
 
 ---
 
-#### **`splitPrimeComposite`**
+#### splitPrimeComposite
 
 ```java
 List<List<Integer>> Misc.splitPrimeComposite(List<Integer> numbers)
@@ -426,7 +429,7 @@ split.get(1);  // [15, 18, 20]      — Composites
 
 ---
 
-#### **`capitalizeEachWord`**
+#### capitalizeEachWord
 
 ```java
 String Misc.capitalizeEachWord(String str)
@@ -456,7 +459,7 @@ Misc.capitalizeEachWord("   ");                      // ""  (whitespace-only)
 
 ---
 
-#### **`truncate`**
+#### truncate
 
 ```java
 String Misc.truncate(String text, int maxLength)
@@ -486,7 +489,7 @@ Misc.truncate("test", -1);                // throws IllegalArgumentException
 
 ---
 
-#### **`clamp`**
+#### clamp
 
 ```java
 int Misc.clamp(long value, int min, int max)
@@ -517,6 +520,119 @@ Misc.clamp(100, 100, 100);  // 100  (exact boundary)
 
 ---
 
+#### levenshteinDistance
+
+```java
+int Misc.levenshteinDistance(String str1, String str2)
+int[] Misc.levenshteinDistance(String target, String[] candidates)
+```
+
+Calculates the Levenshtein distance (edit distance) between two strings. The distance is the minimum number of single-character edits (insertions, deletions, or substitutions) required to change one string into the other. A distance of 0 means the strings are identical.
+
+**Performance:** O(n × m) time, O(m) space using optimized 1D array approach.
+
+**Guard-rails:**
+- Null inputs are treated as empty strings
+- Works with strings of any length
+
+**Parameters (single comparison):**
+
+| Parameter | Type     | Description |
+|-----------|----------|-------------|
+| `str1`    | `String` | First string (may be null) |
+| `str2`    | `String` | Second string (may be null) |
+
+**Returns:** Edit distance as integer (0 = identical, increases with difference).
+
+**Parameters (array comparison):**
+
+| Parameter    | Type       | Description |
+|--------------|------------|-------------|
+| `target`     | `String`   | Target string (may be null) |
+| `candidates` | `String[]` | Array of candidate strings |
+
+**Returns:** Array of distances corresponding to each candidate.
+
+**Examples:**
+
+```java
+// Single comparison
+Misc.levenshteinDistance("hello", "hello");  // 0 (identical)
+Misc.levenshteinDistance("hello", "holl");   // 2 (1 substitution, 1 deletion)
+Misc.levenshteinDistance("abc", "xyz");      // 3 (completely different)
+Misc.levenshteinDistance("hello", null);     // 5 (null treated as empty)
+
+// Multiple candidates
+int[] distances = Misc.levenshteinDistance("hello", new String[]{
+    "heat",   // 3 edits
+    "help",   // 2 edits
+    "groot",  // 5 edits
+    "hell"    // 1 edit
+});
+// Result: [3, 2, 5, 1]
+```
+
+---
+
+#### fuzzyMatchScore
+
+```java
+double Misc.fuzzyMatchScore(String str1, String str2)
+double[] Misc.fuzzyMatchScore(String target, String[] candidates)
+```
+
+Calculates a normalized fuzzy match score between two strings, ranging from 0.0 to 1.0. A score of 1.0 means an exact match, while 0.0 means completely different strings.
+
+**Score Calculation:** Based on Levenshtein distance normalized by the maximum string length.
+
+**Parameters (single comparison):**
+
+| Parameter | Type     | Description |
+|-----------|----------|-------------|
+| `str1`    | `String` | First string (may be null) |
+| `str2`    | `String` | Second string (may be null) |
+
+**Returns:** Similarity score between 0.0 and 1.0.
+
+**Parameters (array comparison):**
+
+| Parameter    | Type       | Description |
+|--------------|------------|-------------|
+| `target`     | `String`   | Target string (may be null) |
+| `candidates` | `String[]` | Array of candidate strings |
+
+**Returns:** Array of scores corresponding to each candidate.
+
+**Examples:**
+
+```java
+// Single comparison
+Misc.fuzzyMatchScore("hello", "hello");  // 1.0 (exact match)
+Misc.fuzzyMatchScore("hello", "hallo");  // 0.8 (very similar)
+Misc.fuzzyMatchScore("hello", "xyz");    // 0.0 (completely different)
+
+// Multiple candidates
+double[] scores = Misc.fuzzyMatchScore("hello", new String[]{
+    "hebdfat",  // 0.286
+    "helgp",    // 0.6
+    "groot",    // 0.0
+    "hell"      // 0.8
+});
+// Result: [0.286, 0.6, 0.0, 0.8]
+
+// Finding best match
+double[] scores = Misc.fuzzyMatchScore("algoritm", new String[]{
+    "algorithm",
+    "alternator",
+    "algae"
+});
+// Highest score indicates the best match
+```
+
+---
+
+### funcBox.dig — Safe JSON Navigation
+
 **Import:**
 ```java
 import funcBox.dig.Dig;
@@ -524,30 +640,374 @@ import funcBox.dig.DigContext;
 ```
 
 Parse JSON once, then reuse a `DigContext` for repeated lookups over maps, lists, and arrays.
+`Dig.of(String)` supports both JSON object roots (`{...}`) and JSON array roots (`[...]`).
+
+**Available Methods:**
+
+| Method | Description |
+|--------|-------------|
+| [`Dig.of(String json)`](#digofstring-json) | Create context from JSON string |
+| [`Dig.of(Object source)`](#digofobject-source) | Create context from object/Map/List |
+| [`get(Object path)`](#getobject-path) | Get value at path (returns null if missing) |
+| [`get(Object path, Object defaultValue)`](#getobject-path-object-defaultvalue) | Get value with fallback |
+| [`has(Object path)`](#hasobject-path) | Check if path exists |
+| [`isEmpty()`](#isempty) | Check if context is empty |
+| [`scope(Object path)`](#scopeobject-path) | Create child context at path |
+| [`getAll(String... paths)`](#getallstring-paths) | Get multiple values at once |
+| [`getString(String path)`](#getstringstring-path) | Get value as String |
+| [`getInt(String path)`](#getintstring-path) | Get value as Integer |
+| [`getLong(String path)`](#getlongstring-path) | Get value as Long |
+| [`getDouble(String path)`](#getdoublestring-path) | Get value as Double |
+| [`getBoolean(String path)`](#getbooleanstring-path) | Get value as Boolean |
 
 ---
 
-#### **`Dig`**
+#### Dig
+
+Factory entry point for creating `DigContext` instances from JSON or object graphs.
 
 ```java
 DigContext Dig.of(String json)
 DigContext Dig.of(Object source)
 ```
 
-#### **`DigContext`**
+**`Dig.of(String json)`**
+
+Creates a `DigContext` from a raw JSON string.
+
+**Parameters:**
+| Parameter | Type     | Description         |
+|-----------|----------|---------------------|
+| `json`    | `String` | Raw JSON text       |
+
+**Returns:** Immutable `DigContext` instance, or `EMPTY` if JSON is null/blank/invalid.
+
+**Example:**
+```java
+String json = "{\"user\": {\"name\": \"Alice\", \"age\": 30}}";
+DigContext d = Dig.of(json);
+System.out.println(d.getString("user.name")); // Alice
+```
+
+**`Dig.of(Object source)`**
+
+Creates a `DigContext` from JSON, an existing `DigContext`, or an object graph (Map/List/Array).
+
+**Parameters:**
+| Parameter | Type      | Description                                              |
+|-----------|-----------|----------------------------------------------------------|
+| `source`  | `Object`  | Raw JSON (String), `DigContext`, Map/List/Array, or null |
+
+**Returns:** Normalized `DigContext` instance.
+
+**Example:**
+```java
+Map<String, Object> data = Map.of("name", "Bob", "age", 25);
+DigContext d = Dig.of(data);
+System.out.println(d.getString("name")); // Bob
+```
+
+---
+
+#### DigContext
+
+Immutable context for safe navigation through JSON and object graphs using dot-path expressions.
+
+
+---
+
+##### get(Object path)
+
+Resolves a value from the context using a dot path, list path, or object-array path.
 
 ```java
 Object DigContext.get(Object path)
+```
+
+**Parameters:**
+| Parameter | Type     | Description       |
+|-----------|----------|-------------------|
+| `path`    | `Object` | Path expression   |
+
+**Returns:** Resolved value or `null` if not found.
+
+**Example:**
+```java
+DigContext d = Dig.of("{\"user\": {\"profile\": {\"city\": \"NY\"}}}");
+String city = (String) d.get("user.profile.city"); // "NY"
+Object missing = d.get("user.email");              // null
+```
+
+---
+
+##### get(Object path, Object defaultValue)
+
+Resolves a value from the context with a fallback default.
+
+```java
 Object DigContext.get(Object path, Object defaultValue)
+```
+
+**Parameters:**
+| Parameter      | Type     | Description                  |
+|----------------|----------|------------------------------|
+| `path`         | `Object` | Path expression              |
+| `defaultValue` | `Object` | Fallback value when missing  |
+
+**Returns:** Resolved value or `defaultValue` if not found.
+
+**Example:**
+```java
+DigContext d = Dig.of("{\"count\": 5}");
+Integer count = (Integer) d.get("count", 0);         // 5
+Integer missing = (Integer) d.get("missing", 0);     // 0 (default)
+```
+
+---
+
+##### has(Object path)
+
+Checks whether a path exists in the current context.
+
+```java
 boolean DigContext.has(Object path)
+```
+
+**Parameters:**
+| Parameter | Type     | Description       |
+|-----------|----------|-------------------|
+| `path`    | `Object` | Path expression   |
+
+**Returns:** `true` if the path exists (even when value is null), `false` otherwise.
+
+**Example:**
+```java
+DigContext d = Dig.of("{\"user\": {\"name\": null}}");
+System.out.println(d.has("user.name"));  // true (exists even though null)
+System.out.println(d.has("user.email")); // false (doesn't exist)
+```
+
+---
+
+##### isEmpty()
+
+Indicates whether this context contains usable data.
+
+```java
+boolean DigContext.isEmpty()
+```
+
+**Returns:** `true` when the context is empty (created from null/invalid JSON).
+
+**Example:**
+```java
+DigContext valid = Dig.of("{\"x\": 1}");
+DigContext empty = Dig.of(null);
+System.out.println(valid.isEmpty());     // false
+System.out.println(empty.isEmpty());     // true
+System.out.println(empty == DigContext.EMPTY); // true
+```
+
+---
+
+##### scope(Object path)
+
+Re-roots the context to a nested node, creating a child context.
+
+```java
 DigContext DigContext.scope(Object path)
-Map<String, Object> DigContext.getAll(String... paths)
+```
+
+**Parameters:**
+| Parameter | Type     | Description       |
+|-----------|----------|-------------------|
+| `path`    | `Object` | Path expression   |
+
+**Returns:** Child `DigContext` rooted at the specified path, or `EMPTY` if path is missing.
+
+**Example:**
+```java
+String json = "{\"user\": {\"profile\": {\"city\": \"NY\", \"zip\": 10001}}}";
+DigContext d = Dig.of(json);
+DigContext profile = d.scope("user.profile");
+System.out.println(profile.getString("city")); // "NY"
+System.out.println(profile.getString("zip"));  // 10001
+```
+
+---
+
+##### getAll(String... paths)
+
+Resolves multiple paths in one call.
+
+```java
+List<Object> DigContext.getAll(String... paths)
+```
+
+**Parameters:**
+| Parameter | Type        | Description              |
+|-----------|-------------|--------------------------|
+| `paths`   | `String...` | One or more path strings |
+
+**Returns:** Ordered list of resolved values (same order as input paths).
+
+**Example:**
+```java
+DigContext d = Dig.of("{\"a\": 1, \"b\": 2, \"c\": 3}");
+List<Object> values = d.getAll("a", "c", "b");
+System.out.println(values); // [1, 3, 2]
+```
+
+---
+
+##### getString(String path)
+
+Resolves a path and converts the value to string when present.
+
+```java
 String DigContext.getString(String path)
+```
+
+**Parameters:**
+| Parameter | Type     | Description |
+|-----------|----------|-------------|
+| `path`    | `String` | Dot path    |
+
+**Returns:** String value or `null` if not found.
+
+**Example:**
+```java
+DigContext d = Dig.of("{\"id\": 42, \"name\": \"Alice\"}");
+System.out.println(d.getString("name")); // "Alice"
+System.out.println(d.getString("id"));   // "42" (converted to string)
+System.out.println(d.getString("missing")); // null
+```
+
+---
+
+##### getInt(String path)
+
+Resolves a path and converts to `Integer` when possible.
+
+```java
 Integer DigContext.getInt(String path)
+```
+
+**Parameters:**
+| Parameter | Type     | Description |
+|-----------|----------|-------------|
+| `path`    | `String` | Dot path    |
+
+**Returns:** Integer value or `null` if not found or cannot be parsed.
+
+**Supported conversions:**
+- Direct `Integer` values
+- Other `Number` types (cast to int)
+- Numeric `String` values (parsed)
+
+**Example:**
+```java
+DigContext d = Dig.of("{\"count\": 42, \"price\": 19.99, \"quantity\": \"100\"}");
+System.out.println(d.getInt("count"));     // 42
+System.out.println(d.getInt("price"));     // 19 (truncated from double)
+System.out.println(d.getInt("quantity"));  // 100 (parsed from string)
+System.out.println(d.getInt("missing"));   // null
+```
+
+---
+
+##### getLong(String path)
+
+Resolves a path and converts to `Long` when possible.
+
+```java
 Long DigContext.getLong(String path)
+```
+
+**Parameters:**
+| Parameter | Type     | Description |
+|-----------|----------|-------------|
+| `path`    | `String` | Dot path    |
+
+**Returns:** Long value or `null` if not found or cannot be parsed.
+
+**Supported conversions:**
+- Direct `Long` values
+- Other `Number` types (cast to long)
+- Numeric `String` values (parsed)
+
+**Example:**
+```java
+DigContext d = Dig.of("{\"timestamp\": 1609459200000, \"count\": \"9999999999\"}");
+System.out.println(d.getLong("timestamp")); // 1609459200000
+System.out.println(d.getLong("count"));     // 9999999999
+System.out.println(d.getLong("missing"));   // null
+```
+
+---
+
+##### getDouble(String path)
+
+Resolves a path and converts to `Double` when possible.
+
+```java
 Double DigContext.getDouble(String path)
+```
+
+**Parameters:**
+| Parameter | Type     | Description |
+|-----------|----------|-------------|
+| `path`    | `String` | Dot path    |
+
+**Returns:** Double value or `null` if not found or cannot be parsed.
+
+**Supported conversions:**
+- Direct `Double` values
+- Other `Number` types (cast to double)
+- Numeric `String` values (parsed)
+
+**Example:**
+```java
+DigContext d = Dig.of("{\"price\": 19.99, \"rating\": 4, \"tax\": \"0.08\"}");
+System.out.println(d.getDouble("price"));  // 19.99
+System.out.println(d.getDouble("rating")); // 4.0
+System.out.println(d.getDouble("tax"));    // 0.08
+System.out.println(d.getDouble("missing")); // null
+```
+
+---
+
+##### getBoolean(String path)
+
+Resolves a path and converts to `Boolean` when possible.
+
+```java
 Boolean DigContext.getBoolean(String path)
 ```
+
+**Parameters:**
+| Parameter | Type     | Description |
+|-----------|----------|-------------|
+| `path`    | `String` | Dot path    |
+
+**Returns:** Boolean value or `null` if not found or cannot be parsed.
+
+**Supported conversions:**
+- Direct `Boolean` values
+- Numeric values: `0.0` → false, non-zero → true
+- String values: `"true"` (case-insensitive) → true, `"false"` → false
+
+**Example:**
+```java
+DigContext d = Dig.of("{\"active\": true, \"deleted\": false, \"count\": 5, \"enabled\": \"true\"}");
+System.out.println(d.getBoolean("active"));   // true
+System.out.println(d.getBoolean("deleted"));  // false
+System.out.println(d.getBoolean("count"));    // true (5 != 0)
+System.out.println(d.getBoolean("enabled"));  // true (parsed from string)
+System.out.println(d.getBoolean("missing"));  // null
+```
+
+---
 
 **Path Format Guide:**
 
@@ -557,16 +1017,6 @@ Boolean DigContext.getBoolean(String path)
 | **Access List/Array elements** | Use **numeric index** for lists/arrays | `"employees.0.name"` (1st employee) |
 | **Mix keys and indexes** | Alternate between names and numbers | `"data.0.items.2"` (1st item, 3rd sub-item) |
 
-**Quick Examples:**
-
-```java
-DigContext d = Dig.of(json);
-
-String name = d.getString("users.0.name");
-String city = (String) d.get("users.0.city", "Unknown");
-DigContext user = d.scope("users.0");
-Integer age = user.getInt("age");
-```
 
 **Path Rules:**
 -  **Names** = object properties (map keys) → use lowercase/camelCase
@@ -586,6 +1036,13 @@ import funcBox.dijkstra.Result;
 ```
 
 The `Dijkstra` class implements **Dijkstra's shortest path algorithm** for weighted directed graphs represented as adjacency maps.
+
+**Available Methods:**
+
+| Method | Description |
+|--------|-------------|
+| [`dijkstra(Map graph, String startNode)`](#dijkstra-single-source) | Find shortest paths from start to all reachable nodes |
+| [`dijkstra(Map graph, String startNode, String endNode)`](#dijkstra-source-to-target) | Find shortest path from start to specific target |
 
 **Graph Format:**
 
@@ -610,7 +1067,7 @@ graph.put("D", Map.of());                 // D has no outgoing edges
 
 ---
 
-#### **`dijkstra`** (single source)
+#### dijkstra (single source)
 
 ```java
 Result Dijkstra.dijkstra(Map<String, Map<String, Integer>> graph, String startNode)
@@ -651,7 +1108,7 @@ System.out.println(result.paths);
 
 ---
 
-#### **`dijkstra`** (source to target)
+#### dijkstra (source to target)
 
 ```java
 Result Dijkstra.dijkstra(Map<String, Map<String, Integer>> graph, String startNode, String endNode)
@@ -696,6 +1153,282 @@ System.out.println(result.paths.get("F"));        // [A, C, B, E, D, F]
 ```
 
 > **Path explained:** A → C (cost 2) → B (cost +1=3) → E (cost +1=4) → D (cost +1=5) → F (cost +2=7). Total: **7**.
+
+---
+
+### funcBox.http — Simplified Web Client
+
+**Import:**
+```java
+import funcBox.http.HttpBox;
+```
+
+`HttpBox` provides a simplified, fetch-like API for HTTP requests, wrapping Java 11+ `HttpClient` with minimal boilerplate. All methods are static and non-blocking with a 10-second timeout.
+
+**Available Methods:**
+
+| Method | Description |
+|--------|-------------|
+| [`get(String url)`](#get) | Send GET request, return response body |
+| [`getJson(String url)`](#getjson) | Send GET request, return parsed JSON |
+| [`post(String url, String body)`](#post) | Send POST request with String body |
+| [`postJson(String url, JSONObject jsonObj)`](#postjson) | Send POST request with JSON object |
+| [`put(String url, String body)`](#put) | Send PUT request with String body |
+| [`delete(String url)`](#delete) | Send DELETE request |
+| [`request(String method, String url, String body, String contentType)`](#request) | Generic request method |
+
+---
+
+#### get
+
+```java
+String HttpBox.get(String url)
+```
+
+Sends a GET request and returns the response body as a String.
+
+**Parameters:**
+| Parameter | Type     | Description   |
+|-----------|----------|----------------|
+| `url`     | `String` | The URL to fetch |
+
+**Returns:** Response body as `String`, or `null` if status is not 2xx.
+
+**Throws:** 
+| Exception | Cause |
+|-----------|-------|
+| `IllegalArgumentException` | URL is null or blank |
+| `HttpBoxException` | Network error occurs |
+
+**Example:**
+```java
+String response = HttpBox.get("https://api.github.com/repos/funcBox-i3/funcBox-java");
+if (response != null) {
+    System.out.println(response);
+} else {
+    System.out.println("Request failed (non-2xx status)");
+}
+```
+
+---
+
+#### getJson
+
+```java
+JSONObject HttpBox.getJson(String url)
+```
+
+Sends a GET request and parses the response as JSON.
+
+**Parameters:**
+| Parameter | Type     | Description   |
+|-----------|----------|----------------|
+| `url`     | `String` | The URL to fetch |
+
+**Returns:** Parsed `JSONObject`, or `null` if status is not 2xx.
+
+**Throws:**
+| Exception | Cause |
+|-----------|-------|
+| `IllegalArgumentException` | URL is null or blank |
+| `HttpBoxException` | Network error occurs OR JSON parsing fails |
+
+**Example:**
+```java
+JSONObject repo = HttpBox.getJson("https://api.github.com/repos/funcBox-i3/funcBox-java");
+if (repo != null) {
+    System.out.println("Stars: " + repo.getInt("stargazers_count"));
+} else {
+    System.out.println("Failed to fetch JSON");
+}
+```
+
+---
+
+#### post
+
+```java
+String HttpBox.post(String url, String body)
+```
+
+Sends a POST request with a String body and returns the response.
+
+**Parameters:**
+| Parameter | Type     | Description                |
+|-----------|----------|----------------------------|
+| `url`     | `String` | The URL to post to        |
+| `body`    | `String` | Request body (can be null) |
+
+**Returns:** Response body as `String`, or `null` if status is not 2xx.
+
+**Throws:**
+| Exception | Cause |
+|-----------|-------|
+| `IllegalArgumentException` | URL is null or blank |
+| `HttpBoxException` | Network error occurs |
+
+**Example:**
+```java
+String json = "{\"name\": \"Alice\", \"age\": 30}";
+String response = HttpBox.post("https://api.example.com/users", json);
+if (response != null) {
+    System.out.println("Created: " + response);
+}
+```
+
+---
+
+#### postJson
+
+```java
+String HttpBox.postJson(String url, JSONObject jsonObj)
+```
+
+Sends a POST request with a JSON object and returns the response.
+
+**Parameters:**
+| Parameter | Type         | Description       |
+|-----------|--------------|-------------------|
+| `url`     | `String`     | The URL to post to |
+| `jsonObj` | `JSONObject` | The JSON object to send |
+
+**Returns:** Response body as `String`, or `null` if status is not 2xx.
+
+**Throws:**
+| Exception | Cause |
+|-----------|-------|
+| `IllegalArgumentException` | URL is null/blank OR jsonObj is null |
+| `HttpBoxException` | Network error occurs |
+
+**Example:**
+```java
+JSONObject payload = new JSONObject();
+payload.put("name", "Bob");
+payload.put("email", "bob@example.com");
+
+String response = HttpBox.postJson("https://api.example.com/users", payload);
+if (response != null) {
+    System.out.println("Success: " + response);
+}
+```
+
+---
+
+#### **`put`**
+
+```java
+String HttpBox.put(String url, String body)
+```
+
+Sends a PUT request with a String body and returns the response.
+
+**Parameters:**
+| Parameter | Type     | Description                |
+|-----------|----------|----------------------------|
+| `url`     | `String` | The URL to put to         |
+| `body`    | `String` | Request body (can be null) |
+
+**Returns:** Response body as `String`, or `null` if status is not 2xx.
+
+**Throws:**
+| Exception | Cause |
+|-----------|-------|
+| `IllegalArgumentException` | URL is null or blank |
+| `HttpBoxException` | Network error occurs |
+
+**Example:**
+```java
+String json = "{\"id\": 123, \"status\": \"active\"}";
+String response = HttpBox.put("https://api.example.com/users/123", json);
+if (response != null) {
+    System.out.println("Updated: " + response);
+}
+```
+
+---
+
+#### **`delete`**
+
+```java
+String HttpBox.delete(String url)
+```
+
+Sends a DELETE request and returns the response.
+
+**Parameters:**
+| Parameter | Type     | Description      |
+|-----------|----------|-------------------|
+| `url`     | `String` | The URL to delete |
+
+**Returns:** Response body as `String`, or `null` if status is not 2xx.
+
+**Throws:**
+| Exception | Cause |
+|-----------|-------|
+| `IllegalArgumentException` | URL is null or blank |
+| `HttpBoxException` | Network error occurs |
+
+**Example:**
+```java
+String response = HttpBox.delete("https://api.example.com/users/123");
+if (response != null) {
+    System.out.println("Deleted successfully: " + response);
+}
+```
+
+---
+
+#### request
+
+```java
+String HttpBox.request(String method, String url, String body, String contentType)
+```
+
+Generic request method supporting custom HTTP methods. Use this for methods not covered by the convenience methods above.
+
+**Parameters:**
+| Parameter     | Type     | Description                           |
+|---------------|----------|---------------------------------------|
+| `method`      | `String` | HTTP method (GET, POST, PUT, DELETE, PATCH, etc.) |
+| `url`         | `String` | The URL                               |
+| `body`        | `String` | Request body (null if none)           |
+| `contentType` | `String` | Content-Type header (null for none)   |
+
+**Returns:** Response body as `String`, or `null` if status is not 2xx.
+
+**Throws:**
+| Exception | Cause |
+|-----------|-------|
+| `IllegalArgumentException` | URL is null or blank |
+| `HttpBoxException` | Network error occurs |
+
+**Example:**
+```java
+String response = HttpBox.request(
+    "PATCH",
+    "https://api.example.com/data/1",
+    "{\"field\": \"value\"}",
+    "application/json"
+);
+if (response != null) {
+    System.out.println("Patched: " + response);
+}
+```
+
+---
+
+**Error Handling:**
+
+| Behavior | Condition |
+|----------|-----------|
+| Returns `null` | Status code is not 2xx (< 200 or >= 300) |
+| Throws `IllegalArgumentException` | URL is null or blank |
+| Throws `HttpBoxException` | Network timeout, connection error, or parsing error |
+
+**Default Behavior:**
+- **Timeout:** 10 seconds per request
+- **Content-Type:** `application/json` (for POST/PUT methods)
+- **HTTP Version:** HTTP/1.1 (or higher, depending on client)
 
 ---
 

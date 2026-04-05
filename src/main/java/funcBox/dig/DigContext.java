@@ -1,11 +1,11 @@
 package funcBox.dig;
 import org.json.JSONException;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,7 +43,12 @@ public final class DigContext {
             Object root = new JSONObject(json).toMap();
             return root == null ? EMPTY : new DigContext(root);
         } catch (JSONException e) {
-            return EMPTY;
+            try {
+                Object root = new JSONArray(json).toList();
+                return root == null ? EMPTY : new DigContext(root);
+            } catch (JSONException ignored) {
+                return EMPTY;
+            }
         }
     }
     /**
@@ -131,15 +136,15 @@ public final class DigContext {
      * Resolves multiple paths in one call.
      *
      * @param paths one or more path strings
-     * @return ordered map of path to resolved value
+     * @return ordered list of resolved values (same order as input paths)
      */
-    public Map<String, Object> getAll(String... paths) {
-        LinkedHashMap<String, Object> result = new LinkedHashMap<>();
+    public List<Object> getAll(String... paths) {
+        List<Object> result = new ArrayList<>();
         if (paths == null) {
             return result;
         }
         for (String path : paths) {
-            result.put(path, get(path));
+            result.add(get(path));
         }
         return result;
     }

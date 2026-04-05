@@ -476,4 +476,127 @@ public final class Misc {
         return (int) Math.min(max, Math.max(value, min));
     }
 
+    /**
+     * Calculates the Levenshtein distance (edit distance) between two strings.
+     *
+     * <p>The Levenshtein distance is the minimum number of single-character edits
+     * (insertions, deletions, or substitutions) required to change one string into the other.
+     * A distance of 0 means the strings are identical.</p>
+     *
+     * <p><b>Guard-rails:</b></p>
+     * <ul>
+     *   <li>Null inputs: Treated as empty strings</li>
+     * </ul>
+     *
+     * <p><b>Algorithm Performance:</b> O(n * m) time and O(m) space, where n and m
+     * are the lengths of the strings. Optimised to use a single 1D array.</p>
+     *
+     * @param str1 the first string, may be null
+     * @param str2 the second string, may be null
+     * @return the Levenshtein distance between the two strings
+     * @since 1.1.1
+     */
+    public static int levenshteinDistance(String str1, String str2) {
+        if (str1 == null) str1 = "";
+        if (str2 == null) str2 = "";
+
+        if (str1.equals(str2)) return 0;
+
+        if (str1.isEmpty()) return str2.length();
+        if (str2.isEmpty()) return str1.length();
+
+        if (str1.length() < str2.length()) {
+            String temp = str1;
+            str1 = str2;
+            str2 = temp;
+        }
+
+        int[] costs = new int[str2.length() + 1];
+        for (int j = 0; j <= str2.length(); j++) {
+            costs[j] = j;
+        }
+
+        for (int i = 1; i <= str1.length(); i++) {
+            costs[0] = i;
+            int nextValue = i - 1;
+            for (int j = 1; j <= str2.length(); j++) {
+                int previousValue = costs[j];
+                if (str1.charAt(i - 1) == str2.charAt(j - 1)) {
+                    costs[j] = nextValue;
+                } else {
+                    costs[j] = Math.min(Math.min(costs[j - 1], costs[j]), nextValue) + 1;
+                }
+                nextValue = previousValue;
+            }
+        }
+        return costs[str2.length()];
+    }
+
+    /**
+     * Calculates the Levenshtein distance between a target string and an array of candidate strings.
+     *
+     * @param target     the target string, may be null
+     * @param candidates the array of candidate strings, may be null
+     * @return an array of distances corresponding to each candidate. Returns an empty array
+     *         if candidates is null or empty.
+     * @since 1.1.1
+     */
+    public static int[] levenshteinDistance(String target, String[] candidates) {
+        if (candidates == null || candidates.length == 0) {
+            return new int[0];
+        }
+
+        int[] scores = new int[candidates.length];
+        for (int i = 0; i < candidates.length; i++) {
+            scores[i] = levenshteinDistance(target, candidates[i]);
+        }
+
+        return scores;
+    }
+
+    /**
+     * Calculates a normalized fuzzy match score between two strings, ranging from 0.0 to 1.0.
+     *
+     * <p>A score of 1.0 means an exact match, while 0.0 means completely different.</p>
+     *
+     * @param str1 the first string, may be null
+     * @param str2 the second string, may be null
+     * @return a similarity score between 0.0 and 1.0
+     * @since 1.1.1
+     */
+    public static double fuzzyMatchScore(String str1, String str2) {
+        if (str1 == null) str1 = "";
+        if (str2 == null) str2 = "";
+
+        if (str1.equals(str2)) return 1.0;
+
+        int maxLength = Math.max(str1.length(), str2.length());
+        if (maxLength == 0) return 1.0;
+
+        int distance = levenshteinDistance(str1, str2);
+        double score = 1.0 - ((double) distance / maxLength);
+        return Math.round(score * 1000.0) / 1000.0;
+    }
+
+    /**
+     * Calculates normalized fuzzy match scores for an array of candidate strings against a target.
+     *
+     * @param target     the target string, may be null
+     * @param candidates the array of candidate strings, may be null
+     * @return an array of similarity scores (0.0 to 1.0) corresponding to each candidate
+     * @since 1.1.1
+     */
+    public static double[] fuzzyMatchScore(String target, String[] candidates) {
+        if (candidates == null || candidates.length == 0) {
+            return new double[0];
+        }
+
+        double[] scores = new double[candidates.length];
+        for (int i = 0; i < candidates.length; i++) {
+            scores[i] = fuzzyMatchScore(target, candidates[i]);
+        }
+
+        return scores;
+    }
+
 }
