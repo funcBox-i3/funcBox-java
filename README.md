@@ -17,6 +17,7 @@
 - [Quick Start](#quick-start)
 - [API Reference](#api-reference)
   - [Misc — Mathematics & String Utilities](#misc--mathematics--string-utilities)
+  - [funcBox.io — File & Resource Utilities](#funcboxio--file--resource-utilities)
   - [funcBox.dig — Safe JSON Navigation](#funcboxdig--safe-json-navigation)
   - [funcBox.http — Simplified Web Client](#funcboxhttp--simplified-web-client)
   - [Dijkstra — Graph Algorithms](#dijkstra--graph-algorithms)
@@ -192,6 +193,38 @@ import funcBox.Misc;
 | [`levenshteinDistance(String target, String[] candidates)`](#levenshteindistance-array) | Calculate edit distances from target to multiple candidates |
 | [`fuzzyMatchScore(String str1, String str2)`](#fuzzymatchscore) | Calculate normalized similarity score (0.0 to 1.0) |
 | [`fuzzyMatchScore(String target, String[] candidates)`](#fuzzymatchscore-array) | Calculate similarity scores from target to multiple candidates |
+
+---
+
+### funcBox.io — File & Resource Utilities
+
+**Import:**
+```java
+import funcBox.io.FileUtil;
+```
+
+**Available Functions:**
+
+| Function | Description |
+|----------|-------------|
+| `loadResource(String path)` | Load a UTF-8 text resource from `src/main/resources` (JAR-safe) |
+| `safeWrite(Path path, String content)` | Atomic write using temp-file + backup + rollback |
+| `getMimeType(File file)` | Best-effort MIME detection (extension-free), returns `application/octet-stream` when unknown |
+
+**Examples:**
+```java
+// 1) Loading a resource (inside JAR or in IDE)
+String text = FileUtil.loadResource("funcbox_io_demo.txt");
+System.out.println(text);
+
+// 2) Safe write with backup
+Path out = Path.of("output.txt");
+FileUtil.safeWrite(out, "hello\n");
+
+// 3) MIME detection
+String mime = FileUtil.getMimeType(out.toFile());
+System.out.println(mime);
+```
 
 ---
 
