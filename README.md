@@ -196,38 +196,6 @@ import funcBox.Misc;
 
 ---
 
-### funcBox.io — File & Resource Utilities
-
-**Import:**
-```java
-import funcBox.io.FileUtil;
-```
-
-**Available Functions:**
-
-| Function | Description |
-|----------|-------------|
-| `loadResource(String path)` | Load a UTF-8 text resource from `src/main/resources` (JAR-safe) |
-| `safeWrite(Path path, String content)` | Atomic write using temp-file + backup + rollback |
-| `getMimeType(File file)` | Best-effort MIME detection (extension-free), returns `application/octet-stream` when unknown |
-
-**Examples:**
-```java
-// 1) Loading a resource (inside JAR or in IDE)
-String text = FileUtil.loadResource("funcbox_io_demo.txt");
-System.out.println(text);
-
-// 2) Safe write with backup
-Path out = Path.of("output.txt");
-FileUtil.safeWrite(out, "hello\n");
-
-// 3) MIME detection
-String mime = FileUtil.getMimeType(out.toFile());
-System.out.println(mime);
-```
-
----
-
 #### isPrime
 
 ```java
@@ -263,6 +231,8 @@ List<Integer> Misc.primes(int start, int limit)
 ```
 
 Generates all prime numbers in the range `[start, limit]` (both ends inclusive) using the **Sieve of Eratosthenes** algorithm.
+
+**Performance:** Highly optimized single-pass algorithm that streams primes directly into the final `List`, omitting intermediate memory allocation.
 
 **Parameters:**
 
@@ -332,6 +302,8 @@ String Misc.getFactors(int num)
 
 Returns all factors of the given number, **including `1` but excluding the number itself**. For prime numbers, only `[1]` is returned since primes have no other factors besides `1` and themselves.
 
+**Performance:** Operates in `O(√n)` time, drastically reducing iterations for large numbers (e.g. iterating only 849 times for `720,720`).
+
 **Parameters:**
 
 | Parameter | Type  | Description                        |
@@ -387,6 +359,8 @@ boolean Misc.isAnagram(String str1, String str2, boolean caseSensitive)
 ```
 
 Determines whether two strings are anagrams of each other. Two strings are anagrams if they contain the same characters with the same frequencies. Whitespace is **always ignored** during comparison. The `caseSensitive` flag controls whether casing matters.
+
+**Performance:** Uses a highly efficient `O(n)` single-pass character frequency counter with zero new string allocations and zero regex compilation.
 
 **Parameters:**
 
@@ -562,7 +536,7 @@ int[] Misc.levenshteinDistance(String target, String[] candidates)
 
 Calculates the Levenshtein distance (edit distance) between two strings. The distance is the minimum number of single-character edits (insertions, deletions, or substitutions) required to change one string into the other. A distance of 0 means the strings are identical.
 
-**Performance:** O(n × m) time, O(m) space using optimized 1D array approach.
+**Performance:** O(n × m) time, O(m) space using a highly-optimized 1D rolling array. The inner nested loop enforces zero new object allocations and unrolls Math operations for maximum speed.
 
 **Guard-rails:**
 - Null inputs are treated as empty strings
@@ -660,6 +634,144 @@ double[] scores = Misc.fuzzyMatchScore("algoritm", new String[]{
     "algae"
 });
 // Highest score indicates the best match
+```
+
+---
+
+### funcBox.io — File & Resource Utilities
+
+**Import:**
+```java
+import funcBox.io.FileUtil;
+import java.io.File;
+import java.nio.file.Path;
+```
+
+**Available Functions:**
+
+| Function | Description |
+|----------|-------------|
+| [`loadResource(String path)`](#loadresourcestring-path) | Read UTF-8 text from classpath resources (`src/main/resources`) in IDE and packaged JAR |
+| [`write(Path path, String content)`](#writepath-path-string-content) | Fast direct UTF-8 write with auto directory creation |
+| [`safeWrite(Path path, String content)`](#safewritepath-path-string-content) | Durable write with temp file, replace, and rollback backup |
+| [`getMimeType(File file)`](#getmimetypefile-file) | Detect MIME using extension + OS probe + magic-number fallback |
+
+#### loadResource(String path)
+
+```java
+String FileUtil.loadResource(String path)
+```
+
+Loads text from classpath resources using UTF-8. Works both in local runs and from the packaged JAR.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `String` | Resource path relative to classpath root (example: `"data/users.json"`) |
+
+**Returns:** Resource content as `String`, or `null` when `path` is null/blank or resource does not exist.
+
+**Throws:** `RuntimeException` for unexpected IO read failures.
+
+**Example:**
+
+```java
+String json = FileUtil.loadResource("data/sample.json");
+System.out.println(json == null ? "Resource not found" : json);
+```
+
+---
+
+#### write(Path path, String content)
+
+```java
+void FileUtil.write(Path path, String content)
+```
+
+Performs a fast file write with minimal overhead. Creates parent directories automatically.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `Path` | Destination file path |
+| `content` | `String` | Data to write in UTF-8 (`null` becomes empty string) |
+
+**Throws:**
+
+| Exception | Condition |
+|-----------|-----------|
+| `IllegalArgumentException` | `path` is `null` |
+| `RuntimeException` | Underlying IO write fails |
+
+**Example:**
+
+```java
+FileUtil.write(Path.of("logs", "app.txt"), "started\n");
+```
+
+---
+
+#### safeWrite(Path path, String content)
+
+```java
+void FileUtil.safeWrite(Path path, String content)
+```
+
+Writes content safely for crash-sensitive flows. Uses a temporary file, replaces the target, and restores backup on failure (best effort).
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `path` | `Path` | Destination file path |
+| `content` | `String` | Data to write in UTF-8 (`null` becomes empty string) |
+
+**Throws:**
+
+| Exception | Condition |
+|-----------|-----------|
+| `IllegalArgumentException` | `path` is `null` |
+| `RuntimeException` | IO fails before successful replacement |
+
+**Notes:**
+- Uses atomic move when supported by the filesystem.
+- Leaves backup files on disk intentionally for manual recovery/history.
+
+**Example:**
+
+```java
+Path config = Path.of(System.getProperty("user.home"), "funcbox", "config.json");
+FileUtil.safeWrite(config, "{\"theme\":\"dark\"}\n");
+```
+
+---
+
+#### getMimeType(File file)
+
+```java
+String FileUtil.getMimeType(File file)
+```
+
+Detects file MIME type using a layered strategy: extension map, OS-level probe, then magic-number/header heuristics.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `file` | `File` | File to inspect |
+
+**Returns:**
+- `null` when `file` is null/missing/not a regular file
+- A detected MIME type when recognized (example: `image/png`)
+- `application/octet-stream` when unknown
+
+**Example:**
+
+```java
+String mime = FileUtil.getMimeType(Path.of("downloads", "payload.bin").toFile());
+System.out.println(mime);
 ```
 
 ---

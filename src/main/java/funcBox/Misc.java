@@ -42,40 +42,33 @@ public final class Misc {
             return new ArrayList<>();
         }
 
-        List<Integer> allPrimes = new ArrayList<>();
+        // Single-pass: sieve odd numbers only, emit directly into result list
+        List<Integer> result = new ArrayList<>();
 
         if (limit < 3) {
-            allPrimes.add(2);
-        } else {
-            int size = (limit / 2) + 1;
-            byte[] isPrime = new byte[size]; // 0 = true, 1 = false
-            for (int i = 0; i < size; i++) {
-                isPrime[i] = 0;
-            }
+            if (start <= 2) result.add(2);
+            return result;
+        }
 
-            int sqrtLimit = (int) (Math.sqrt(limit)) / 2 + 1;
+        int size = (limit / 2) + 1;
+        byte[] sieve = new byte[size]; // Java zeroes this — no manual init needed
 
-            for (int i = 1; i < sqrtLimit; i++) {
-                if (isPrime[i] == 0) {
-                    int startIdx = 2 * i * (i + 1);
-                    for (int j = startIdx; j < size; j += 2 * i + 1) {
-                        isPrime[j] = 1;
-                    }
-                }
-            }
-
-            allPrimes.add(2);
-            for (int i = 1; i < size; i++) {
-                if (isPrime[i] == 0) {
-                    allPrimes.add(2 * i + 1);
+        int sqrtLimit = (int) (Math.sqrt(limit)) / 2 + 1;
+        for (int i = 1; i < sqrtLimit; i++) {
+            if (sieve[i] == 0) {
+                int step = 2 * i + 1;
+                for (int j = 2 * i * (i + 1); j < size; j += step) {
+                    sieve[j] = 1;
                 }
             }
         }
 
-        List<Integer> result = new ArrayList<>();
-        for (int prime : allPrimes) {
-            if (prime >= start && prime <= limit) {
-                result.add(prime);
+        // Emit primes directly in-range (no intermediate list)
+        if (start <= 2) result.add(2);
+        for (int i = 1; i < size; i++) {
+            if (sieve[i] == 0) {
+                int prime = 2 * i + 1;
+                if (prime >= start) result.add(prime);
             }
         }
 
@@ -92,8 +85,9 @@ public final class Misc {
      */
     public static boolean isPrime(int num) {
 
-        if (num <= 1) return false;
-        if (num <= 3) return true;
+        // Single merged guard: handles negatives, 0, 1, 2, and 3 in one branch pair
+        if (num < 2) return false;
+        if (num < 4) return true;  // 2 and 3 are prime
 
         if (num % 2 == 0 || num % 3 == 0) return false;
 
@@ -177,13 +171,28 @@ public final class Misc {
      */
     public static String getFactors(int num) {
         if (num <= 0) return "[]";
-        List<Integer> factors = new ArrayList<>();
-        for (int i = 1; i <= num; i++) {
-            if (num % i == 0 && i != num) {
-                factors.add(i);
+        if (num == 1) return "[1]";
+
+        // O(√n) — collect factor pairs from both ends
+        List<Integer> lo = new ArrayList<>();
+        List<Integer> hi = new ArrayList<>();
+
+        int sqrt = (int) Math.sqrt(num);
+        for (int i = 1; i <= sqrt; i++) {
+            if (num % i == 0) {
+                lo.add(i);                     // small factor
+                int pair = num / i;
+                if (pair != i && pair != num) { // large factor (exclude num itself)
+                    hi.add(pair);
+                }
             }
         }
-        return factors.toString();
+
+        // Merge: lo is ascending, hi needs to be reversed (descending → ascending)
+        for (int i = hi.size() - 1; i >= 0; i--) {
+            lo.add(hi.get(i));
+        }
+        return lo.toString();
     }
 
     /**
@@ -311,39 +320,31 @@ public final class Misc {
             return false;
         }
 
-        String normalized1;
-        String normalized2;
+        // Single-pass frequency counting — no regex, no toLowerCase(), no allocation
+        int[] freq = new int[256];
+        int len1 = 0; // effective length (excluding whitespace)
 
-        if (caseSensitive) {
-            normalized1 = str1.replaceAll("\\s+", "");
-            normalized2 = str2.replaceAll("\\s+", "");
-        } else {
-            normalized1 = str1.toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
-            normalized2 = str2.toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
+        for (int i = 0, n = str1.length(); i < n; i++) {
+            char c = str1.charAt(i);
+            if (c == ' ' || c == '\t' || c == '\n' || c == '\r') continue;
+            if (!caseSensitive && c >= 'A' && c <= 'Z') c = (char) (c + 32);
+            freq[c]++;
+            len1++;
         }
 
-        if (normalized1.length() != normalized2.length()) {
-            return false;
+        if (len1 == 0) return false;
+
+        int len2 = 0;
+        for (int i = 0, n = str2.length(); i < n; i++) {
+            char c = str2.charAt(i);
+            if (c == ' ' || c == '\t' || c == '\n' || c == '\r') continue;
+            if (!caseSensitive && c >= 'A' && c <= 'Z') c = (char) (c + 32);
+            freq[c]--;
+            if (freq[c] < 0) return false;
+            len2++;
         }
 
-        if (normalized1.isEmpty()) {
-            return false;
-        }
-
-        int[] charFreq = new int[256];
-
-        for (char c : normalized1.toCharArray()) {
-            charFreq[c]++;
-        }
-
-        for (char c : normalized2.toCharArray()) {
-            charFreq[c]--;
-            if (charFreq[c] < 0) {
-                return false;
-            }
-        }
-
-        return true;
+        return len1 == len2;
     }
 
     /**
@@ -382,47 +383,40 @@ public final class Misc {
             return "";
         }
 
-        String normalized = str.replaceAll("\\s+", " ").trim();
+        // Single O(n) pass: normalize whitespace, trim, and capitalize — no regex, no extra split
+        final int len = str.length();
+        StringBuilder sb = new StringBuilder(len);
+        boolean newWord = true;   // treat start-of-string as word boundary
+        boolean anyChar = false;  // tracks whether we wrote any non-space content
 
-        if (normalized.isEmpty()) {
-            return "";
-        }
+        for (int i = 0; i < len; i++) {
+            char c = str.charAt(i);
 
-        if (!normalized.contains(" ")) {
-            if (normalized.length() == 1) {
-                return normalized.toUpperCase(Locale.ROOT);
-            }
-            return Character.toUpperCase(normalized.charAt(0)) + normalized.substring(1).toLowerCase(Locale.ROOT);
-        }
-
-        String[] words = normalized.split(" ");
-
-        if (words.length == 0) {
-            return "";
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        for (int i = 0; i < words.length; i++) {
-            String word = words[i];
-
-            if (word.isEmpty()) {
-                continue;
-            }
-
-            if (word.length() == 1) {
-                sb.append(Character.toUpperCase(word.charAt(0)));
+            if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+                // Collapse all whitespace runs into a single space (only after real content)
+                if (anyChar) {
+                    sb.append(' ');
+                    anyChar = false;
+                }
+                newWord = true;
             } else {
-                sb.append(Character.toUpperCase(word.charAt(0)))
-                        .append(word.substring(1).toLowerCase(Locale.ROOT));
-            }
-
-            if (i < words.length - 1) {
-                sb.append(" ");
+                if (newWord) {
+                    sb.append(Character.toUpperCase(c));
+                    newWord = false;
+                } else {
+                    sb.append(Character.toLowerCase(c));
+                }
+                anyChar = true;
             }
         }
 
-        return sb.toString();
+        // Remove any trailing space that was appended before detecting end-of-string
+        int end = sb.length();
+        while (end > 0 && sb.charAt(end - 1) == ' ') {
+            end--;
+        }
+
+        return sb.substring(0, end);
     }
 
     /**
@@ -500,36 +494,34 @@ public final class Misc {
         if (str1 == null) str1 = "";
         if (str2 == null) str2 = "";
 
-        if (str1.equals(str2)) return 0;
+        int m = str1.length();
+        int n = str2.length();
 
-        if (str1.isEmpty()) return str2.length();
-        if (str2.isEmpty()) return str1.length();
+        if (m == 0) return n;
+        if (n == 0) return m;
 
-        if (str1.length() < str2.length()) {
-            String temp = str1;
-            str1 = str2;
-            str2 = temp;
-        }
+        // 1-D rolling DP with charAt — zero allocations inside the loop
+        int[] dp = new int[n + 1];
+        for (int j = 1; j <= n; j++) dp[j] = j;
 
-        int[] costs = new int[str2.length() + 1];
-        for (int j = 0; j <= str2.length(); j++) {
-            costs[j] = j;
-        }
-
-        for (int i = 1; i <= str1.length(); i++) {
-            costs[0] = i;
-            int nextValue = i - 1;
-            for (int j = 1; j <= str2.length(); j++) {
-                int previousValue = costs[j];
-                if (str1.charAt(i - 1) == str2.charAt(j - 1)) {
-                    costs[j] = nextValue;
+        for (int i = 1; i <= m; i++) {
+            char sc = str1.charAt(i - 1);
+            int prev = i - 1;
+            dp[0] = i;
+            for (int j = 1; j <= n; j++) {
+                int temp = dp[j];
+                if (sc == str2.charAt(j - 1)) {
+                    dp[j] = prev;
                 } else {
-                    costs[j] = Math.min(Math.min(costs[j - 1], costs[j]), nextValue) + 1;
+                    int min = dp[j - 1];
+                    if (temp < min) min = temp;
+                    if (prev < min) min = prev;
+                    dp[j] = 1 + min;
                 }
-                nextValue = previousValue;
+                prev = temp;
             }
         }
-        return costs[str2.length()];
+        return dp[n];
     }
 
     /**

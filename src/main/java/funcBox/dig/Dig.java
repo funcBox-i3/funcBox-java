@@ -12,6 +12,21 @@ public final class Dig {
     /**
      * Creates a {@link DigContext} from raw JSON.
      *
+     * <p>Parses the JSON string into an internal object graph <b>exactly once</b>.
+     * Reuse the returned {@link DigContext} for all subsequent lookups on the same JSON.
+     * Calling {@code Dig.of(json)} repeatedly in a loop is an <b>anti-pattern</b>
+     * and is significantly slower than storing and reusing the context.</p>
+     *
+     * <p><b>Correct usage:</b></p>
+     * <pre>
+     * // Parse once
+     * DigContext ctx = Dig.of(json);
+     *
+     * // Reuse many times
+     * String name = ctx.getString("user.name");
+     * int    age  = ctx.getInt("user.age");
+     * </pre>
+     *
      * @param json raw JSON text
      * @return immutable dig context; never null
      */

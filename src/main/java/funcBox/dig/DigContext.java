@@ -295,12 +295,36 @@ public final class DigContext {
      * Internal safe traversal engine.
      */
     private static Object safeGet(Object source, Object path, Object defaultValue, boolean returnLastSeen) {
-        if (source == null) {
-            return defaultValue;
+        if (source == null) return defaultValue;
+        if (path == null) return source;
+
+        // Optimization: Fast-path for simple single-level string keys
+        if (path instanceof String) {
+            String s = (String) path;
+            if (s.indexOf('.') == -1) {
+                if (source instanceof Map) {
+                    Map<?, ?> map = (Map<?, ?>) source;
+                    Object next = map.get(s);
+                    if (next == null && !map.containsKey(s)) {
+                        return returnLastSeen ? source : defaultValue;
+                    }
+                    return next;
+                }
+                // Handle simple index "0", "1" for arrays/lists even without DOT
+                int idx = parseIndex(s);
+                if (idx >= 0) {
+                    if (source instanceof List) {
+                        List<?> list = (List<?>) source;
+                        return (idx < list.size()) ? list.get(idx) : (returnLastSeen ? source : defaultValue);
+                    }
+                    if (source.getClass().isArray()) {
+                        int len = Array.getLength(source);
+                        return (idx < len) ? Array.get(source, idx) : (returnLastSeen ? source : defaultValue);
+                    }
+                }
+            }
         }
-        if (path == null) {
-            return source;
-        }
+
         List<?> keys = normalizePath(path);
         if (keys == null) {
             return returnLastSeen ? source : defaultValue;

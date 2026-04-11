@@ -80,7 +80,48 @@ public final class FileUtil {
     }
 
     /**
+     * Write text to a file quickly with no backup or atomicity guarantees.
+     *
+     * <p>This is a thin wrapper around {@link Files#writeString(Path, CharSequence, java.nio.charset.Charset, java.nio.file.OpenOption...)}.
+     * Use this when you need raw write speed and can tolerate data loss on crash.</p>
+     *
+     * <p>For durability with backup + rollback, use {@link #safeWrite(Path, String)} instead.</p>
+     *
+     * <p><b>Guard-rails:</b>
+     * <ul>
+     *   <li>{@code path} must not be null (throws {@link IllegalArgumentException}).</li>
+     *   <li>Parent directories are created automatically.</li>
+     *   <li>{@code content} may be null; it will be written as an empty string.</li>
+     * </ul>
+     * </p>
+     *
+     * @param path    destination path
+     * @param content content to write (UTF-8); null becomes empty
+     * @throws IllegalArgumentException if {@code path} is null
+     * @throws RuntimeException         if an IO error occurs
+     * @since 1.1.1
+     */
+    public static void write(Path path, String content) {
+        if (path == null) {
+            throw new IllegalArgumentException("path must not be null");
+        }
+        String body = (content == null) ? "" : content;
+        Path parent = path.toAbsolutePath().getParent();
+        try {
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            Files.writeString(path, body, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException("write failed for path=" + path, e);
+        }
+    }
+
+    /**
      * Write text to a file atomically with backup and rollback.
+     *
+     * <p>Use this when data durability matters. For raw performance without
+     * durability guarantees, use {@link #write(Path, String)} instead.</p>
      *
      * <p><b>What it guarantees:</b>
      * <ul>
@@ -188,6 +229,13 @@ public final class FileUtil {
             return null;
         }
 
+        // Fast-path 1: try common file extension first (zero IO, O(1))
+        String byExtension = detectByExtension(file.getName());
+        if (byExtension != null) {
+            return byExtension;
+        }
+
+        // Fast-path 2: OS-level content type probe
         try {
             String probed = Files.probeContentType(path);
             if (probed != null && !probed.isBlank()) {
@@ -197,6 +245,7 @@ public final class FileUtil {
             // fall through to signature detection
         }
 
+        // Fallback: read magic-number bytes for extension-free or ambiguous files
         try (InputStream in = new BufferedInputStream(Files.newInputStream(path))) {
             byte[] header = in.readNBytes(64);
             String bySig = detectBySignature(header);
@@ -208,6 +257,30 @@ public final class FileUtil {
         }
 
         return "application/octet-stream";
+    }
+
+    private static String detectByExtension(String fileName) {
+        if (fileName == null) return null;
+        int dot = fileName.lastIndexOf('.');
+        if (dot < 0 || dot == fileName.length() - 1) return null;
+        switch (fileName.substring(dot + 1).toLowerCase(java.util.Locale.ROOT)) {
+            case "png":              return "image/png";
+            case "jpg": case "jpeg": return "image/jpeg";
+            case "gif":              return "image/gif";
+            case "pdf":              return "application/pdf";
+            case "zip":              return "application/zip";
+            case "mp3":              return "audio/mpeg";
+            case "mp4":              return "video/mp4";
+            case "json":             return "application/json";
+            case "txt":              return "text/plain";
+            case "html": case "htm": return "text/html";
+            case "xml":              return "application/xml";
+            case "csv":              return "text/csv";
+            case "svg":              return "image/svg+xml";
+            case "webp":             return "image/webp";
+            case "jar": case "war":  return "application/java-archive";
+            default:                 return null;  // unknown extension → fall through to byte probe
+        }
     }
 
     private static void safeDeleteIfExists(Path p) {
