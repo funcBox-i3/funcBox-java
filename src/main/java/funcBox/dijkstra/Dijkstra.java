@@ -36,12 +36,8 @@ public final class Dijkstra {
      * Computes the shortest paths from the given start node and returns
      * the result covering all reachable nodes.
      *
-     * <p>This method internally:
-     * <ol>
-     *     <li>Runs the Dijkstra algorithm from the start node</li>
-     *     <li>Finds the farthest reachable node</li>
-     *     <li>Returns the shortest path from the start node to that node</li>
-     * </ol>
+     * <p>This method runs the Dijkstra algorithm from the start node and
+     * filters out unreachable nodes before returning the result.</p>
      *
      * @param graph     the graph represented as adjacency maps
      * @param startNode the starting node
@@ -49,19 +45,20 @@ public final class Dijkstra {
      * @throws IllegalArgumentException if input is invalid or graph contains negative edge weights
      */
     public static Result dijkstra(Map<String, Map<String, Integer>> graph, String startNode) {
-        Result all = dijkstra(graph, startNode, null);
-        String farthest = null;
-        int maxDist = Integer.MIN_VALUE;
+        Result all = runDijkstra(graph, startNode, null);
+
+        Map<String, Integer> reachableDistances = new LinkedHashMap<>();
+        Map<String, List<String>> reachablePaths = new LinkedHashMap<>();
         for (Map.Entry<String, Integer> entry : all.distances.entrySet()) {
-            if (entry.getValue() != Integer.MAX_VALUE && entry.getValue() > maxDist) {
-                maxDist = entry.getValue();
-                farthest = entry.getKey();
+            Integer distance = entry.getValue();
+            if (distance != null && distance != Integer.MAX_VALUE) {
+                String node = entry.getKey();
+                reachableDistances.put(node, distance);
+                reachablePaths.put(node, all.paths.get(node));
             }
         }
-        if (farthest != null && !farthest.equals(startNode)) {
-            return dijkstra(graph, startNode, farthest);
-        }
-        return all;
+
+        return new Result(reachableDistances, reachablePaths);
     }
 
     /**
@@ -78,6 +75,10 @@ public final class Dijkstra {
      * @throws IllegalArgumentException if nodes are invalid or any traversed edge has negative weight
      */
     public static Result dijkstra(Map<String, Map<String, Integer>> graph, String startNode, String endNode) {
+        return runDijkstra(graph, startNode, endNode);
+    }
+
+    private static Result runDijkstra(Map<String, Map<String, Integer>> graph, String startNode, String endNode) {
         if (graph == null || !graph.containsKey(startNode)) {
             throw new IllegalArgumentException("Start node must be in the graph.");
         }
@@ -86,49 +87,43 @@ public final class Dijkstra {
         }
 
         Map<String, Integer> distances = new HashMap<>();
-        Map<String, List<String>> paths = new HashMap<>();
+        Map<String, String> predecessors = new HashMap<>();
         for (String node : graph.keySet()) {
             distances.put(node, Integer.MAX_VALUE);
-            paths.put(node, null);
         }
 
         distances.put(startNode, 0);
-        paths.put(startNode, new ArrayList<>(List.of(startNode)));
 
         PriorityQueue<Node> queue = new PriorityQueue<>(Comparator.comparingInt(n -> n.distance));
         queue.offer(new Node(startNode, 0));
 
         while (!queue.isEmpty()) {
             Node current = queue.poll();
-            String currentNode = current.name;
+            String u = current.name;
 
-            // Skip outdated entries
-            if (current.distance > distances.get(currentNode)) {
+            if (current.distance > distances.get(u)) {
                 continue;
             }
 
-            Map<String, Integer> neighbors = graph.get(currentNode);
+            if (u.equals(endNode)) break;
+
+            Map<String, Integer> neighbors = graph.get(u);
             if (neighbors == null) continue;
 
             for (Map.Entry<String, Integer> neighborEntry : neighbors.entrySet()) {
-                String neighbor = neighborEntry.getKey();
+                String v = neighborEntry.getKey();
                 int weight = neighborEntry.getValue();
                 if (weight < 0) {
                     throw new IllegalArgumentException("Edge weights must be non-negative for Dijkstra.");
                 }
 
-                distances.putIfAbsent(neighbor, Integer.MAX_VALUE);
-                paths.putIfAbsent(neighbor, null);
-
-                long newDistLong = (long) distances.get(currentNode) + weight;
+                long newDistLong = (long) distances.get(u) + weight;
                 int newDist = newDistLong > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) newDistLong;
 
-                if (newDist < distances.get(neighbor)) {
-                    distances.put(neighbor, newDist);
-                    List<String> newPath = new ArrayList<>(paths.get(currentNode));
-                    newPath.add(neighbor);
-                    paths.put(neighbor, newPath);
-                    queue.offer(new Node(neighbor, newDist));
+                if (newDist < distances.getOrDefault(v, Integer.MAX_VALUE)) {
+                    distances.put(v, newDist);
+                    predecessors.put(v, u);
+                    queue.offer(new Node(v, newDist));
                 }
             }
         }
@@ -136,16 +131,35 @@ public final class Dijkstra {
         if (endNode != null) {
             Map<String, Integer> filteredDistances = new LinkedHashMap<>();
             Map<String, List<String>> filteredPaths = new LinkedHashMap<>();
-            List<String> path = paths.get(endNode);
+            List<String> path = reconstructPath(predecessors, startNode, endNode);
             if (path != null) {
                 for (String node : path) {
                     filteredDistances.put(node, distances.get(node));
-                    filteredPaths.put(node, paths.get(node));
+                    filteredPaths.put(node, reconstructPath(predecessors, startNode, node));
                 }
             }
             return new Result(filteredDistances, filteredPaths);
         }
-        return new Result(distances, paths);
+
+        Map<String, List<String>> allPaths = new HashMap<>();
+        for (String node : distances.keySet()) {
+            if (distances.get(node) != Integer.MAX_VALUE) {
+                allPaths.put(node, reconstructPath(predecessors, startNode, node));
+            }
+        }
+        return new Result(distances, allPaths);
+    }
+
+    private static List<String> reconstructPath(Map<String, String> predecessors, String start, String end) {
+        if (!predecessors.containsKey(end) && !start.equals(end)) {
+            return null;
+        }
+        LinkedList<String> path = new LinkedList<>();
+        for (String at = end; at != null; at = predecessors.get(at)) {
+            path.addFirst(at);
+            if (at.equals(start)) break;
+        }
+        return path;
     }
 
     /**

@@ -17,7 +17,7 @@
 - [Quick Start](#quick-start)
 - [API Reference](#api-reference)
   - [Misc — Mathematics & String Utilities](#misc--mathematics--string-utilities)
-  - [funcBox.io — File & Resource Utilities](#funcboxio--file--resource-utilities)
+  - [funcBox.io — File, Resource & MIME Utilities](#funcboxio--file--resource-utilities)
   - [funcBox.dig — Safe JSON Navigation](#funcboxdig--safe-json-navigation)
   - [funcBox.http — Simplified Web Client](#funcboxhttp--simplified-web-client)
   - [Dijkstra — Graph Algorithms](#dijkstra--graph-algorithms)
@@ -170,6 +170,8 @@ All methods in FuncBox are **static**. You never need to create an instance — 
 
 ### Misc — Mathematics & String Utilities
 
+Static numeric and string helpers that are designed to be fast, defensive, and easy to call directly from application code.
+
 **Import:**
 ```java
 import funcBox.Misc;
@@ -203,6 +205,8 @@ boolean Misc.isPrime(int num)
 ```
 
 Checks whether a given integer is a prime number.
+
+**Performance:** $O(\sqrt{n})$ trial division with $6k \pm 1$ optimization. Includes a fast-exit precomputed table for numbers $\le 97$.
 
 **Parameters:**
 
@@ -263,7 +267,9 @@ Misc.primes(2, 2);    // [2]
 long Misc.fibonacci(int num)
 ```
 
-Returns the Fibonacci number at the given index using an iterative approach.
+Returns the Fibonacci number at the given index.
+
+**Performance:** $O(1)$ constant time using a precomputed static cache for all valid indices ($0$ to $92$).
 
 **Valid index range:** `0..92`
 
@@ -640,6 +646,8 @@ double[] scores = Misc.fuzzyMatchScore("algoritm", new String[]{
 
 ### funcBox.io — File & Resource Utilities
 
+Utilities in this section focus on safe resource loading, fast file writing, crash-safe persistence, and MIME detection for common file types.
+
 **Import:**
 ```java
 import funcBox.io.FileUtil;
@@ -652,9 +660,9 @@ import java.nio.file.Path;
 | Function | Description |
 |----------|-------------|
 | [`loadResource(String path)`](#loadresourcestring-path) | Read UTF-8 text from classpath resources (`src/main/resources`) in IDE and packaged JAR |
-| [`write(Path path, String content)`](#writepath-path-string-content) | Fast direct UTF-8 write with auto directory creation |
-| [`safeWrite(Path path, String content)`](#safewritepath-path-string-content) | Durable write with temp file, replace, and rollback backup |
-| [`getMimeType(File file)`](#getmimetypefile-file) | Detect MIME using extension + OS probe + magic-number fallback |
+| [`write(Path path, String content)`](#writepath-path-string-content) | Fast direct UTF-8 write with automatic directory creation |
+| [`safeWrite(Path path, String content)`](#safewritepath-path-string-content) | Durable write with temp file, replacement, and rollback backup |
+| [`getMimeType(File file)`](#getmimetypefile-file) | Detect MIME using extension hint, OS probe, and magic-number fallback |
 
 #### loadResource(String path)
 
@@ -663,6 +671,8 @@ String FileUtil.loadResource(String path)
 ```
 
 Loads text from classpath resources using UTF-8. Works both in local runs and from the packaged JAR.
+
+Best when you want to ship configuration, templates, or sample JSON inside the library JAR and read them without hardcoding filesystem paths.
 
 **Parameters:**
 
@@ -690,6 +700,8 @@ void FileUtil.write(Path path, String content)
 ```
 
 Performs a fast file write with minimal overhead. Creates parent directories automatically.
+
+Use this when speed matters more than rollback protection. It is the simplest file-write path in the library.
 
 **Parameters:**
 
@@ -720,6 +732,8 @@ void FileUtil.safeWrite(Path path, String content)
 ```
 
 Writes content safely for crash-sensitive flows. Uses a temporary file, replaces the target, and restores backup on failure (best effort).
+
+Recommended for user settings, cache files, or any output that should survive partial writes. Backups are kept on disk for manual recovery or inspection.
 
 **Parameters:**
 
@@ -754,7 +768,9 @@ FileUtil.safeWrite(config, "{\"theme\":\"dark\"}\n");
 String FileUtil.getMimeType(File file)
 ```
 
-Detects file MIME type using a layered strategy: extension map, OS-level probe, then magic-number/header heuristics.
+Detects file MIME type using a layered strategy: quick extension hint, OS-level probe, then magic-number/header heuristics.
+
+This is useful when you do not trust the filename alone and want a best-effort MIME check before upload, preview, or routing logic.
 
 **Parameters:**
 
@@ -765,7 +781,7 @@ Detects file MIME type using a layered strategy: extension map, OS-level probe, 
 **Returns:**
 - `null` when `file` is null/missing/not a regular file
 - A detected MIME type when recognized (example: `image/png`)
-- `application/octet-stream` when unknown
+- `application/octet-stream` when the file is valid but the type is still unknown
 
 **Example:**
 
@@ -1308,7 +1324,7 @@ System.out.println(result.paths.get("F"));        // [A, C, B, E, D, F]
 import funcBox.http.HttpBox;
 ```
 
-`HttpBox` provides a simplified, fetch-like API for HTTP requests, wrapping Java 11+ `HttpClient` with minimal boilerplate. All methods are static and non-blocking with a 10-second timeout.
+`HttpBox` provides a simplified, fetch-like API for HTTP requests, wrapping Java 11+ `HttpClient` with minimal boilerplate. All methods are static and synchronous with a 10-second timeout.
 
 **Available Methods:**
 

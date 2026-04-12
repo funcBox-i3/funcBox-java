@@ -2,7 +2,6 @@ package funcBox;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Miscellaneous utility class providing numeric and string helper methods.
@@ -21,6 +20,16 @@ public final class Misc {
      * Prevents instantiation of this static utility class.
      */
     private Misc() {
+    }
+
+    private static final long[] FIB_CACHE = new long[93];
+    private static final long[] SMALL_PRIMES = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97};
+
+    static {
+        // Precompute Fibonacci up to long capacity (index 92)
+        FIB_CACHE[0] = 0;
+        FIB_CACHE[1] = 1;
+        for (int i = 2; i <= 92; i++) FIB_CACHE[i] = FIB_CACHE[i - 1] + FIB_CACHE[i - 2];
     }
 
     /**
@@ -46,7 +55,7 @@ public final class Misc {
         List<Integer> result = new ArrayList<>();
 
         if (limit < 3) {
-            if (start <= 2) result.add(2);
+            result.add(2);
             return result;
         }
 
@@ -84,13 +93,19 @@ public final class Misc {
      * @return {@code true} if the number is prime; {@code false} otherwise
      */
     public static boolean isPrime(int num) {
-
-        // Single merged guard: handles negatives, 0, 1, 2, and 3 in one branch pair
         if (num < 2) return false;
-        if (num < 4) return true;  // 2 and 3 are prime
+        
+        // Fast exit for very small numbers using precomputed table
+        if (num <= 97) {
+            for (long p : SMALL_PRIMES) {
+                if (num == p) return true;
+                if (num < p) return false;
+            }
+        }
 
         if (num % 2 == 0 || num % 3 == 0) return false;
 
+        // O(√n) trial division with 6k +/- 1 optimization
         for (int i = 5; i * i <= num; i += 6) {
             if (num % i == 0 || num % (i + 2) == 0) {
                 return false;
@@ -213,29 +228,15 @@ public final class Misc {
      * @throws ArithmeticException      if {@code num > 92}
      */
     public static long fibonacci(int num) {
-        // 1. Guard against invalid inputs explicitly
         if (num < 0) {
             throw new IllegalArgumentException("Fibonacci index cannot be negative: " + num);
         }
-
-        // 2. Guard against hardware limits (the 93rd number overflows a 64-bit signed long)
         if (num > 92) {
             throw new ArithmeticException("Fibonacci result exceeds the capacity of a long (max index 92).");
         }
 
-        if (num <= 1) return num;
-
-        // 3. Use 64-bit variables for the internal state
-        long prevFib = 0;
-        long fib = 1;
-
-        for (int i = 2; i <= num; i++) {
-            long next = prevFib + fib;
-            prevFib = fib;
-            fib = next;
-        }
-
-        return fib;
+        // O(1) return from precomputed cache
+        return FIB_CACHE[num];
     }
 
     /**
@@ -320,15 +321,15 @@ public final class Misc {
             return false;
         }
 
-        // Single-pass frequency counting — no regex, no toLowerCase(), no allocation
+        // Optimized frequency counting — fast 256-size array for ASCII/Latin-1
         int[] freq = new int[256];
-        int len1 = 0; // effective length (excluding whitespace)
+        int len1 = 0; 
 
         for (int i = 0, n = str1.length(); i < n; i++) {
             char c = str1.charAt(i);
-            if (c == ' ' || c == '\t' || c == '\n' || c == '\r') continue;
-            if (!caseSensitive && c >= 'A' && c <= 'Z') c = (char) (c + 32);
-            freq[c]++;
+            if (c <= ' ') continue; // Fast whitespace skip
+            if (!caseSensitive && c >= 'A' && c <= 'Z') c += 32; // Fast case fold
+            if (c < 256) freq[c]++;
             len1++;
         }
 
@@ -337,10 +338,12 @@ public final class Misc {
         int len2 = 0;
         for (int i = 0, n = str2.length(); i < n; i++) {
             char c = str2.charAt(i);
-            if (c == ' ' || c == '\t' || c == '\n' || c == '\r') continue;
-            if (!caseSensitive && c >= 'A' && c <= 'Z') c = (char) (c + 32);
-            freq[c]--;
-            if (freq[c] < 0) return false;
+            if (c <= ' ') continue;
+            if (!caseSensitive && c >= 'A' && c <= 'Z') c += 32;
+            if (c < 256) {
+                freq[c]--;
+                if (freq[c] < 0) return false;
+            }
             len2++;
         }
 
@@ -566,8 +569,7 @@ public final class Misc {
         if (maxLength == 0) return 1.0;
 
         int distance = levenshteinDistance(str1, str2);
-        double score = 1.0 - ((double) distance / maxLength);
-        return Math.round(score * 1000.0) / 1000.0;
+        return 1.0 - ((double) distance / maxLength);
     }
 
     /**

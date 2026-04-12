@@ -12,20 +12,19 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-/**
- * File and resource utilities.
- *
- * <p>This class is designed to be "JAR-safe" (works the same way when packaged).
- * It provides defensive guard-rails around common IO tasks to reduce runtime
- * errors for beginners.</p>
- *
- * <p><b>Design rules:</b>
- * <ul>
- *   <li>No external dependencies (JDK only).</li>
- *   <li>All methods are static; the class cannot be instantiated.</li>
- *   <li>Prefer safe defaults and predictable behavior.</li>
- * </ul>
- * </p>
+    /**
+     * File and resource utilities.
+     *
+     * <p>This class is designed to be "JAR-safe" (works the same way when packaged).
+     * It provides defensive guard-rails around common IO tasks to reduce runtime
+     * errors for beginners.</p>
+     *
+     * <p><b>Design rules:</b></p>
+     * <ul>
+     *   <li>No external dependencies (JDK only).</li>
+     *   <li>All methods are static; the class cannot be instantiated.</li>
+     *   <li>Prefer safe defaults and predictable behavior.</li>
+     * </ul>
  *
  * @since 1.1.1
  */
@@ -42,13 +41,12 @@ public final class FileUtil {
      * <p>This method is JAR-safe: it uses the class loader to locate the resource
      * and reads it via {@link java.lang.ClassLoader#getResourceAsStream(String)}.</p>
      *
-     * <p><b>Guard-rails:</b>
+     * <p><b>Guard-rails:</b></p>
      * <ul>
      *   <li>If {@code path} is null/blank =&gt; returns {@code null}</li>
      *   <li>If the resource is missing =&gt; returns {@code null}</li>
      *   <li>Never throws for "not found" (only throws for unexpected IO failures)</li>
      * </ul>
-     * </p>
      *
      * @param path resource path relative to the classpath root (example: {@code "data/sample.json"})
      * @return resource contents as UTF-8 text, or {@code null} if missing/blank
@@ -87,13 +85,12 @@ public final class FileUtil {
      *
      * <p>For durability with backup + rollback, use {@link #safeWrite(Path, String)} instead.</p>
      *
-     * <p><b>Guard-rails:</b>
+     * <p><b>Guard-rails:</b></p>
      * <ul>
      *   <li>{@code path} must not be null (throws {@link IllegalArgumentException}).</li>
      *   <li>Parent directories are created automatically.</li>
      *   <li>{@code content} may be null; it will be written as an empty string.</li>
      * </ul>
-     * </p>
      *
      * @param path    destination path
      * @param content content to write (UTF-8); null becomes empty
@@ -123,22 +120,20 @@ public final class FileUtil {
      * <p>Use this when data durability matters. For raw performance without
      * durability guarantees, use {@link #write(Path, String)} instead.</p>
      *
-     * <p><b>What it guarantees:</b>
+     * <p><b>What it guarantees:</b></p>
      * <ul>
      *   <li>Writes to a temporary file in the same directory first.</li>
      *   <li>Moves the temp file into place using an atomic move when supported.</li>
      *   <li>If the target exists, it is backed up before replacement.</li>
      *   <li>If replacement fails after backup, the backup is restored (best-effort rollback).</li>
      * </ul>
-     * </p>
      *
-     * <p><b>Guard-rails:</b>
+     * <p><b>Guard-rails:</b></p>
      * <ul>
      *   <li>{@code path} must not be null (throws {@link IllegalArgumentException}).</li>
      *   <li>Parent directories are created automatically.</li>
      *   <li>{@code content} may be null; it will be written as an empty string.</li>
      * </ul>
-     * </p>
      *
      * @param path    destination path
      * @param content content to write (UTF-8); null becomes empty
@@ -201,21 +196,20 @@ public final class FileUtil {
     }
 
     /**
-     * Detect a file's MIME type without relying on its extension.
+     * Detect a file's MIME type using a layered strategy.
      *
-     * <p><b>How it works:</b>
+     * <p><b>How it works:</b></p>
      * <ol>
-     *   <li>First tries {@link Files#probeContentType(Path)} (OS / installed file type detectors).</li>
-     *   <li>If that returns null, reads the first bytes and detects common "magic numbers"</li>
+     *   <li>First checks a lightweight extension hint for common types.</li>
+     *   <li>Then tries {@link Files#probeContentType(Path)} (OS / installed file type detectors).</li>
+     *   <li>If that returns null, reads the first bytes and detects common "magic numbers".</li>
      * </ol>
-     * </p>
      *
-     * <p><b>Return rules:</b>
+     * <p><b>Return rules:</b></p>
      * <ul>
      *   <li>If {@code file} is null/missing/not a file =&gt; returns {@code null}</li>
-     *   <li>If unknown =&gt; returns {@code "application/octet-stream"}</li>
+     *   <li>If the file is valid but the type cannot be detected =&gt; returns {@code "application/octet-stream"}</li>
      * </ul>
-     * </p>
      *
      * @param file file to inspect
      * @return detected mime type, {@code application/octet-stream} when unknown, or {@code null} for invalid input
@@ -309,12 +303,13 @@ public final class FileUtil {
         }
 
         // GIF: GIF87a / GIF89a
-        if (startsWithAscii(header, "GIF87a") || startsWithAscii(header, "GIF89a")) {
+        if (startsWith(header, new byte[]{0x47, 0x49, 0x46, 0x38, 0x37, 0x61}) || 
+            startsWith(header, new byte[]{0x47, 0x49, 0x46, 0x38, 0x39, 0x61})) {
             return "image/gif";
         }
 
         // PDF: %PDF
-        if (startsWithAscii(header, "%PDF")) {
+        if (startsWith(header, new byte[]{0x25, 0x50, 0x44, 0x46})) {
             return "application/pdf";
         }
 
@@ -324,7 +319,7 @@ public final class FileUtil {
         }
 
         // MP3: ID3
-        if (startsWithAscii(header, "ID3")) {
+        if (startsWith(header, new byte[]{0x49, 0x44, 0x33})) {
             return "audio/mpeg";
         }
 

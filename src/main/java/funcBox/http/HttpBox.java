@@ -161,10 +161,21 @@ public final class HttpBox {
      * Exception thrown when an HTTP operation fails.
      */
     public static class HttpBoxException extends RuntimeException {
+        /**
+         * Constructs an exception with a descriptive message.
+         *
+         * @param message the detail message
+         */
         public HttpBoxException(String message) {
             super(message);
         }
 
+        /**
+         * Constructs an exception with a message and cause.
+         *
+         * @param message the detail message
+         * @param cause   the underlying cause
+         */
         public HttpBoxException(String message, Throwable cause) {
             super(message, cause);
         }
