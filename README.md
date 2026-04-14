@@ -51,7 +51,7 @@ Open your `pom.xml` and add the following inside the `<dependencies>` block:
     <dependency>
         <groupId>io.github.funcbox-i3</groupId>
         <artifactId>funcBox</artifactId>
-        <version>1.1.0</version>
+        <version>1.1.1</version>
     </dependency>
 </dependencies>
 ```
@@ -68,7 +68,7 @@ Open your `build.gradle` and add the dependency inside the `dependencies` block:
 
 ```groovy
 dependencies {
-    implementation 'io.github.funcbox-i3:funcBox:1.1.0'
+    implementation 'io.github.funcbox-i3:funcBox:1.1.1'
 }
 ```
 
@@ -84,7 +84,7 @@ Open your `build.gradle.kts` and add:
 
 ```kotlin
 dependencies {
-    implementation("io.github.funcbox-i3:funcBox:1.1.0")
+    implementation("io.github.funcbox-i3:funcBox:1.1.1")
 }
 ```
 
